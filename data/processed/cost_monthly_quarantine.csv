@@ -1,0 +1,4 @@
+cost_record_id,project_code,package_code,cost_category,report_month,planned_cost,actual_cost,committed_cost,forecast_at_completion,currency,source_system
+C-000018,PRJ-999,PRJ-001-PKG-06,IT/Controls,2025-02-28,164133.54,180079.09,183314.66,4957232.7,GBP,ERP_COST
+C-000081,PRJ-001,PRJ-001-PKG-09,Mechanical,2025-07-31,4321.01,-25000.0,4420.26,88717.3,GBP,ERP_COST
+C-000181,PRJ-001,,Civil,2026-04-30,339860.96,317404.18,402694.19,6814722.0,GBP,ERP_COST

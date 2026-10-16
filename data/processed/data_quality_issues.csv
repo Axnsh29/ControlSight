@@ -1,0 +1,14 @@
+dataset,row_index,issue_type,column,value,message
+cost_monthly,17,invalid_reference,project_code,PRJ-999,Project code does not exist in projects.csv
+cost_monthly,80,invalid_value,actual_cost,-25000.0,Actual cost cannot be negative
+cost_monthly,180,missing_value,package_code,,Package code is missing
+progress_updates,9,invalid_format,report_month,31/12/2025,Report month is not in YYYY-MM-DD format
+progress_updates,25,invalid_value,actual_progress_pct,126.0,Actual progress must be between 0 and 100
+schedule_activities,30,logical_error,actual_finish,2026-06-10,Actual finish date occurs before actual start date
+schedule_activities,65,missing_value,percent_complete,,Percent complete is missing
+procurement_packages,4,missing_value,vendor_id,,Vendor ID is missing
+procurement_packages,56,missing_value,vendor_id,,Vendor ID is missing
+procurement_packages,89,missing_value,vendor_id,,Vendor ID is missing
+procurement_packages,5,duplicate_record,procurement_id,PO-00006,Duplicate procurement ID detected
+procurement_packages,118,duplicate_record,procurement_id,PO-00006,Duplicate procurement ID detected
+cost_monthly,120,anomaly,actual_cost,2732739.52,Actual cost is more than 3 times the planned cost

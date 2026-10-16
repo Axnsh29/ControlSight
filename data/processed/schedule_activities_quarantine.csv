@@ -1,0 +1,3 @@
+activity_id,project_code,wbs_code,activity_name,discipline,planned_start,planned_finish,actual_start,actual_finish,percent_complete,status,is_critical,source_system
+PRJ-001-ACT-031,PRJ-001,WBS-07,Design approval,Civil,2025-12-28,2026-01-23,2026-06-20,2026-06-10,100.0,Complete,False,P6_EXPORT
+PRJ-002-ACT-026,PRJ-002,WBS-06,Electrical installation,Structural,2025-12-29,2026-01-19,2025-12-31,2026-01-23,,Complete,False,P6_EXPORT

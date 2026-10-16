@@ -1,0 +1,11 @@
+dataset,issue_type,issue_count
+cost_monthly,anomaly,1
+cost_monthly,invalid_reference,1
+cost_monthly,invalid_value,1
+cost_monthly,missing_value,1
+procurement_packages,missing_value,3
+procurement_packages,duplicate_record,2
+progress_updates,invalid_format,1
+progress_updates,invalid_value,1
+schedule_activities,logical_error,1
+schedule_activities,missing_value,1

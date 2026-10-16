@@ -1,0 +1,4 @@
+procurement_id,project_code,package_code,vendor_id,category,rfq_date,po_date,planned_delivery_date,actual_delivery_date,package_value,status,criticality,source_system
+PO-00005,PRJ-001,PRJ-001-PKG-05,,HVAC,2025-01-22,2025-03-04,2025-05-22,2025-05-28,753538.42,Delivered,Low,PROCURE_TRACKER
+PO-00057,PRJ-004,PRJ-004-PKG-09,,Mechanical,2024-12-19,2025-01-28,2025-04-08,2025-04-13,3364137.88,Delivered,Low,PROCURE_TRACKER
+PO-00090,PRJ-007,PRJ-007-PKG-01,,Civil,2026-03-08,2026-04-10,2026-07-25,2026-07-25,905756.49,Delivered,Medium,PROCURE_TRACKER
