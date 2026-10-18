@@ -12,7 +12,27 @@
 
     <meta
         name="description"
-        content="ControlSight Project Controls Intelligence Platform"
+        content="ControlSight is a project controls intelligence platform for identifying cost pressure, progress slippage, schedule exposure and procurement risk."
+    >
+
+    <meta
+        property="og:title"
+        content="ControlSight | Project Controls Intelligence"
+    >
+
+    <meta
+        property="og:description"
+        content="Identify cost pressure, progress slippage and delivery risk across a project portfolio."
+    >
+
+    <meta
+        property="og:type"
+        content="website"
+    >
+
+    <meta
+        name="theme-color"
+        content="#071426"
     >
 
     <title>
@@ -20,8 +40,24 @@
     </title>
 
     <link
+        rel="icon"
+        href="data:image/svg+xml,
+        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
+        <rect width='64' height='64' rx='14' fill='%232563eb'/>
+        <text x='32' y='39' text-anchor='middle'
+        font-family='Arial' font-size='23'
+        font-weight='700' fill='white'>CS</text>
+        </svg>"
+    >
+
+    <link
         rel="stylesheet"
         href="/css/styles.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/css/polish.css"
     >
 
 </head>
@@ -30,6 +66,7 @@
 <body>
 
 <div class="application-shell">
+
 
     <!-- =====================================================
          SIDEBAR
@@ -42,6 +79,7 @@
             <div class="brand-mark">
                 CS
             </div>
+
 
             <div class="brand-copy">
 
@@ -58,7 +96,10 @@
         </div>
 
 
-        <nav class="sidebar-nav">
+        <nav
+            class="sidebar-nav"
+            aria-label="Dashboard navigation"
+        >
 
             <span class="nav-label">
                 Workspace
@@ -69,8 +110,23 @@
                 href="#portfolio-overview"
                 class="nav-item active"
             >
-                <span class="nav-icon">◫</span>
+
+                <span class="nav-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+
+                </span>
+
                 Overview
+
             </a>
 
 
@@ -78,8 +134,25 @@
                 href="#project-portfolio"
                 class="nav-item"
             >
-                <span class="nav-icon">▤</span>
+
+                <span class="nav-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M4 6h16"/>
+                        <path d="M4 12h16"/>
+                        <path d="M4 18h16"/>
+                        <circle cx="7" cy="6" r="1"/>
+                        <circle cx="7" cy="12" r="1"/>
+                        <circle cx="7" cy="18" r="1"/>
+                    </svg>
+
+                </span>
+
                 Projects
+
             </a>
 
 
@@ -87,8 +160,21 @@
                 href="#project-detail"
                 class="nav-item project-nav"
             >
-                <span class="nav-icon">↗</span>
+
+                <span class="nav-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M4 18l5-5 4 3 7-9"/>
+                        <path d="M15 7h5v5"/>
+                    </svg>
+
+                </span>
+
                 Performance
+
             </a>
 
 
@@ -101,8 +187,23 @@
                 href="#cost-performance"
                 class="nav-item project-nav"
             >
-                <span class="nav-icon">£</span>
+
+                <span class="nav-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M7 7c0-2 1.7-3 4-3 2.5 0 4 1.1 4 3"/>
+                        <path d="M7 17c0 2 1.7 3 4 3 2.5 0 4-1.1 4-3"/>
+                        <path d="M6 10h8"/>
+                        <path d="M6 14h7"/>
+                    </svg>
+
+                </span>
+
                 Cost
+
             </a>
 
 
@@ -110,8 +211,21 @@
                 href="#schedule-risk-panel"
                 class="nav-item project-nav"
             >
-                <span class="nav-icon">◷</span>
+
+                <span class="nav-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <circle cx="12" cy="12" r="8"/>
+                        <path d="M12 7v5l3 2"/>
+                    </svg>
+
+                </span>
+
                 Schedule
+
             </a>
 
 
@@ -119,8 +233,23 @@
                 href="#procurement-risk-panel"
                 class="nav-item project-nav"
             >
-                <span class="nav-icon">◇</span>
+
+                <span class="nav-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M4 7h16l-2 10H6L4 7z"/>
+                        <path d="M9 7V5h6v2"/>
+                        <path d="M8 20h.01"/>
+                        <path d="M16 20h.01"/>
+                    </svg>
+
+                </span>
+
                 Procurement
+
             </a>
 
 
@@ -128,8 +257,20 @@
                 href="#data-quality"
                 class="nav-item"
             >
-                <span class="nav-icon">✓</span>
+
+                <span class="nav-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M5 12l4 4L19 6"/>
+                    </svg>
+
+                </span>
+
                 Data Quality
+
             </a>
 
         </nav>
@@ -148,11 +289,16 @@
                     </strong>
 
                     <span>
-                        API &amp; data layer connected
+                        Controlled analytical layer
                     </span>
 
                 </div>
 
+            </div>
+
+
+            <div class="sidebar-version">
+                ControlSight · Demo v1.0
             </div>
 
         </div>
@@ -160,11 +306,13 @@
     </aside>
 
 
+
     <!-- =====================================================
          MAIN APPLICATION
          ===================================================== -->
 
     <div class="main-shell">
+
 
         <header class="topbar">
 
@@ -175,13 +323,29 @@
                 </span>
 
                 <h1>
-                    Portfolio Intelligence
+                    ControlSight — Portfolio Intelligence
                 </h1>
 
             </div>
 
 
             <div class="topbar-actions">
+
+                <div
+                    id="reporting-snapshot"
+                    class="snapshot-indicator"
+                >
+
+                    <span class="snapshot-label">
+                        Reporting snapshot
+                    </span>
+
+                    <strong id="snapshot-date">
+                        Resolving...
+                    </strong>
+
+                </div>
+
 
                 <div class="live-data">
 
@@ -190,6 +354,7 @@
                     Connected
 
                 </div>
+
 
                 <div class="environment-badge">
                     MANAGEMENT VIEW
@@ -202,6 +367,7 @@
 
         <main class="dashboard-content">
 
+
             <!-- =============================================
                  PORTFOLIO OVERVIEW
                  ============================================= -->
@@ -211,63 +377,188 @@
                 class="portfolio-overview"
             >
 
-                <div class="page-heading">
 
-                    <div>
+                <div class="hero-panel">
+
+                    <div class="hero-copy">
 
                         <span class="section-eyebrow">
-                            Executive Overview
+                            Portfolio Control
                         </span>
 
+
                         <h2>
-                            Portfolio Performance
+                            Identify cost pressure,
+                            progress slippage and delivery
+                            risk across the portfolio.
                         </h2>
 
+
                         <p>
-                            Consolidated cost, progress and
-                            delivery performance across active
-                            projects.
+                            ControlSight brings cost,
+                            schedule, procurement and
+                            data-quality signals into one
+                            management view so attention can
+                            be directed to the projects that
+                            need it most.
+                        </p>
+
+
+                        <div class="hero-capabilities">
+
+                            <span>
+                                Cost forecasting
+                            </span>
+
+                            <span>
+                                Progress control
+                            </span>
+
+                            <span>
+                                Delivery risk
+                            </span>
+
+                            <span>
+                                Data governance
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="demo-disclosure">
+
+                        <span>
+                            Demonstration Environment
+                        </span>
+
+                        <strong>
+                            Synthetic EPC project data
+                        </strong>
+
+                        <p>
+                            Built to demonstrate a controlled
+                            analytics workflow from source
+                            data through validation, API and
+                            management reporting.
                         </p>
 
                     </div>
 
-
-                    <div class="reporting-period">
-
-                        <span>
-                            Reporting Environment
-                        </span>
-
-                        <strong>
-                            Active Portfolio
-                        </strong>
-
-                    </div>
-
                 </div>
 
+
+
+                <!-- =========================================
+                     KPI SKELETON
+                     ========================================= -->
 
                 <div id="portfolio-kpis">
 
-                    <div class="loading-state">
-                        Loading portfolio performance...
-                    </div>
+                    <div class="skeleton-kpi"></div>
+                    <div class="skeleton-kpi"></div>
+                    <div class="skeleton-kpi"></div>
+                    <div class="skeleton-kpi"></div>
+                    <div class="skeleton-kpi"></div>
+                    <div class="skeleton-kpi"></div>
 
                 </div>
 
+
+
+                <!-- =========================================
+                     PORTFOLIO COST EXPOSURE
+                     ========================================= -->
+
+                <section
+                    id="portfolio-cost-exposure"
+                    class="portfolio-exposure-panel"
+                >
+
+                    <div class="exposure-header">
+
+                        <div>
+
+                            <span class="section-eyebrow">
+                                Forecast Exposure
+                            </span>
+
+                            <h3>
+                                Budget vs Forecast at Completion
+                            </h3>
+
+                            <p>
+                                Ranked portfolio view of
+                                forecast cost exposure by
+                                project.
+                            </p>
+
+                        </div>
+
+
+                        <div class="exposure-legend">
+
+                            <span>
+                                <i class="legend-square budget"></i>
+                                Budget
+                            </span>
+
+                            <span>
+                                <i class="legend-square forecast-over"></i>
+                                Forecast over budget
+                            </span>
+
+                            <span>
+                                <i class="legend-square forecast-under"></i>
+                                Forecast under budget
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div id="portfolio-exposure-chart">
+
+                        <div class="skeleton-chart">
+
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+
+                <!-- =========================================
+                     MANAGEMENT PRIORITIES
+                     ========================================= -->
 
                 <div
                     id="portfolio-attention"
                     class="portfolio-attention"
                 >
 
-                    <div class="loading-state">
-                        Analysing portfolio priorities...
+                    <div class="skeleton-priority">
+
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+
                     </div>
 
                 </div>
 
             </section>
+
 
 
             <!-- =============================================
@@ -279,11 +570,23 @@
                 class="dashboard-section"
             >
 
-                <div class="loading-state">
-                    Loading project portfolio...
+                <div class="section-skeleton">
+
+                    <div class="skeleton-heading"></div>
+
+                    <div class="skeleton-table">
+
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+
+                    </div>
+
                 </div>
 
             </section>
+
 
 
             <!-- =============================================
@@ -297,6 +600,7 @@
             </section>
 
 
+
             <!-- =============================================
                  DATA QUALITY
                  ============================================= -->
@@ -308,13 +612,62 @@
 
                 <div id="data-quality-dashboard">
 
-                    <div class="loading-state">
-                        Loading data-quality controls...
+                    <div class="section-skeleton">
+
+                        <div class="skeleton-heading"></div>
+
+                        <div class="skeleton-table">
+
+                            <div></div>
+                            <div></div>
+                            <div></div>
+
+                        </div>
+
                     </div>
 
                 </div>
 
             </section>
+
+
+
+            <!-- =============================================
+                 FOOTER
+                 ============================================= -->
+
+            <footer class="dashboard-footer">
+
+                <div>
+
+                    <strong>
+                        ControlSight
+                    </strong>
+
+                    <span>
+                        Project Controls Intelligence Platform
+                    </span>
+
+                </div>
+
+
+                <div class="footer-meta">
+
+                    <span>
+                        Synthetic demonstration data
+                    </span>
+
+                    <span>
+                        Rules-based analytics
+                    </span>
+
+                    <span>
+                        v1.0
+                    </span>
+
+                </div>
+
+            </footer>
 
         </main>
 
@@ -323,7 +676,44 @@
 </div>
 
 
+
+<!-- =========================================================
+     DEMO ENVIRONMENT NOTICE
+     ========================================================= -->
+
+<div
+    id="demo-service-notice"
+    class="service-notice"
+>
+
+    <div>
+
+        <strong>
+            Demo environment
+        </strong>
+
+        <span>
+            The hosted service may take longer on its first
+            request after a period of inactivity.
+        </span>
+
+    </div>
+
+
+    <button
+        id="dismiss-service-notice"
+        type="button"
+        aria-label="Dismiss demo environment notice"
+    >
+        ×
+    </button>
+
+</div>
+
+
+
 <script src="/js/dashboard.js"></script>
+<script src="/js/polish.js"></script>
 
 </body>
 
