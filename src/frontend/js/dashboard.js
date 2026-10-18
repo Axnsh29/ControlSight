@@ -51,6 +51,11 @@ function formatPercentage(value) {
 }
 
 
+function formatValidationRate(value) {
+    return `${Number(value || 0).toFixed(2)}%`;
+}
+
+
 function formatAxisCurrency(value) {
 
     const number = Number(value || 0);
@@ -379,17 +384,18 @@ async function loadPortfolioKPIs() {
                 </strong>
             </div>
 
-<div class="kpi-card">
-    <span class="kpi-label">
-        Validation Pass Rate
-    </span>
 
-    <strong class="kpi-value">
-        ${formatPercentage(
-            data.data_quality_score
-        )}
-    </strong>
-</div>
+            <div class="kpi-card">
+                <span class="kpi-label">
+                    Validation Pass Rate
+                </span>
+
+                <strong class="kpi-value">
+                    ${formatValidationRate(
+                        data.data_quality_score
+                    )}
+                </strong>
+            </div>
 
         `;
 
