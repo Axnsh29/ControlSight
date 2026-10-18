@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="ControlSight Project Controls Intelligence Platform"
+    >
+
+    <title>
+        ControlSight | Project Controls Intelligence
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="/css/styles.css"
+    >
+</head>
+
+
+<body>
+
+<div class="application-shell">
+
+    <!-- =====================================================
+         SIDEBAR
+         ===================================================== -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+
+            <div class="brand-mark">
+                CS
+            </div>
+
+            <div class="brand-copy">
+                <strong>ControlSight</strong>
+                <span>Project Intelligence</span>
+            </div>
+
+        </div>
+
+
+        <nav class="sidebar-nav">
+
+            <span class="nav-label">
+                Workspace
+            </span>
+
+
+            <a
+                href="#portfolio-overview"
+                class="nav-item active"
+            >
+                <span class="nav-icon">◫</span>
+                Overview
+            </a>
+
+
+            <a
+                href="#project-portfolio"
+                class="nav-item"
+            >
+                <span class="nav-icon">▤</span>
+                Projects
+            </a>
+
+
+            <a
+                href="#project-detail"
+                class="nav-item project-nav"
+            >
+                <span class="nav-icon">↗</span>
+                Performance
+            </a>
+
+
+            <span class="nav-label nav-label-secondary">
+                Controls
+            </span>
+
+
+            <a
+                href="#cost-performance"
+                class="nav-item project-nav"
+            >
+                <span class="nav-icon">£</span>
+                Cost
+            </a>
+
+
+            <a
+                href="#schedule-risk-panel"
+                class="nav-item project-nav"
+            >
+                <span class="nav-icon">◷</span>
+                Schedule
+            </a>
+
+
+            <a
+                href="#procurement-risk-panel"
+                class="nav-item project-nav"
+            >
+                <span class="nav-icon">◇</span>
+                Procurement
+            </a>
+
+
+            <a
+                href="#data-quality"
+                class="nav-item"
+            >
+                <span class="nav-icon">✓</span>
+                Data Quality
+            </a>
+
+        </nav>
+
+
+        <div class="sidebar-footer">
+
+            <div class="system-status">
+
+                <span class="status-indicator"></span>
+
+                <div>
+                    <strong>
+                        Systems Operational
+                    </strong>
+
+                    <span>
+                        API &amp; data layer connected
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =====================================================
+         MAIN APPLICATION
+         ===================================================== -->
+
+    <div class="main-shell">
+
+        <header class="topbar">
+
+            <div>
+                <span class="topbar-eyebrow">
+                    PROJECT CONTROLS
+                </span>
+
+                <h1>
+                    Portfolio Intelligence
+                </h1>
+            </div>
+
+
+            <div class="topbar-actions">
+
+                <div class="live-data">
+                    <span class="live-dot"></span>
+                    Connected
+                </div>
+
+                <div class="environment-badge">
+                    MANAGEMENT VIEW
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <main class="dashboard-content">
+
+            <!-- =============================================
+                 PORTFOLIO OVERVIEW
+                 ============================================= -->
+
+            <section
+                id="portfolio-overview"
+                class="portfolio-overview"
+            >
+
+                <div class="page-heading">
+
+                    <div>
+                        <span class="section-eyebrow">
+                            Executive Overview
+                        </span>
+
+                        <h2>
+                            Portfolio Performance
+                        </h2>
+
+                        <p>
+                            Consolidated cost, progress and
+                            delivery performance across active
+                            projects.
+                        </p>
+                    </div>
+
+
+                    <div class="reporting-period">
+                        <span>
+                            Reporting Environment
+                        </span>
+
+                        <strong>
+                            Active Portfolio
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <div id="portfolio-kpis">
+                    <div class="loading-state">
+                        Loading portfolio performance...
+                    </div>
+                </div>
+
+
+                <div
+                    id="portfolio-attention"
+                    class="portfolio-attention"
+                >
+                    <div class="loading-state">
+                        Analysing portfolio priorities...
+                    </div>
+                </div>
+
+            </section>
+
+
+            <!-- =============================================
+                 DATA QUALITY
+                 ============================================= -->
+
+            <section
+                id="data-quality"
+                class="dashboard-section"
+            >
+
+                <div id="data-quality-dashboard">
+                    <div class="loading-state">
+                        Loading data-quality controls...
+                    </div>
+                </div>
+
+            </section>
+
+
+            <!-- =============================================
+                 PROJECT PORTFOLIO
+                 ============================================= -->
+
+            <section
+                id="project-portfolio"
+                class="dashboard-section"
+            >
+
+                <div class="loading-state">
+                    Loading project portfolio...
+                </div>
+
+            </section>
+
+
+            <!-- =============================================
+                 SELECTED PROJECT
+                 ============================================= -->
+
+            <section
+                id="project-detail"
+                class="dashboard-section hidden"
+            >
+            </section>
+
+        </main>
+
+    </div>
+
+</div>
+
+
+<script src="/js/dashboard.js"></script>
+
+</body>
+
+</html>
