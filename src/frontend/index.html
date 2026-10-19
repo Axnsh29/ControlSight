@@ -12,7 +12,7 @@
 
     <meta
         name="description"
-        content="ControlSight is a project controls intelligence platform for identifying cost pressure, progress slippage, schedule exposure and procurement risk."
+        content="ControlSight is a project controls intelligence platform for identifying cost pressure, progress slippage, schedule exposure, procurement risk and data-quality exceptions."
     >
 
     <meta
@@ -39,6 +39,7 @@
         ControlSight | Project Controls Intelligence
     </title>
 
+
     <link
         rel="icon"
         href="data:image/svg+xml,
@@ -49,6 +50,7 @@
         font-weight='700' fill='white'>CS</text>
         </svg>"
     >
+
 
     <link
         rel="stylesheet"
@@ -117,10 +119,34 @@
                         viewBox="0 0 24 24"
                         aria-hidden="true"
                     >
-                        <rect x="3" y="3" width="7" height="7" rx="1"/>
-                        <rect x="14" y="3" width="7" height="7" rx="1"/>
-                        <rect x="3" y="14" width="7" height="7" rx="1"/>
-                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                        <rect
+                            x="3"
+                            y="3"
+                            width="7"
+                            height="7"
+                            rx="1"
+                        />
+                        <rect
+                            x="14"
+                            y="3"
+                            width="7"
+                            height="7"
+                            rx="1"
+                        />
+                        <rect
+                            x="3"
+                            y="14"
+                            width="7"
+                            height="7"
+                            rx="1"
+                        />
+                        <rect
+                            x="14"
+                            y="14"
+                            width="7"
+                            height="7"
+                            rx="1"
+                        />
                     </svg>
 
                 </span>
@@ -218,7 +244,11 @@
                         viewBox="0 0 24 24"
                         aria-hidden="true"
                     >
-                        <circle cx="12" cy="12" r="8"/>
+                        <circle
+                            cx="12"
+                            cy="12"
+                            r="8"
+                        />
                         <path d="M12 7v5l3 2"/>
                     </svg>
 
@@ -298,7 +328,7 @@
 
 
             <div class="sidebar-version">
-                ControlSight · Demo v1.0
+                ControlSight · Demo v1.1
             </div>
 
         </div>
@@ -491,7 +521,8 @@
                             <p>
                                 Ranked portfolio view of
                                 forecast cost exposure by
-                                project.
+                                project. Forecast variance is
+                                defined as Budget − FAC.
                             </p>
 
                         </div>
@@ -506,12 +537,12 @@
 
                             <span>
                                 <i class="legend-square forecast-over"></i>
-                                Forecast over budget
+                                Forecast overrun
                             </span>
 
                             <span>
                                 <i class="legend-square forecast-under"></i>
-                                Forecast under budget
+                                Forecast saving
                             </span>
 
                         </div>
@@ -538,24 +569,90 @@
 
 
                 <!-- =========================================
-                     MANAGEMENT PRIORITIES
+                     MANAGEMENT ATTENTION INDEX
                      ========================================= -->
 
-                <div
-                    id="portfolio-attention"
-                    class="portfolio-attention"
+                <section
+                    id="portfolio-attention-panel"
+                    class="portfolio-attention-panel"
                 >
 
-                    <div class="skeleton-priority">
+                    <div class="attention-header">
 
-                        <div></div>
-                        <div></div>
-                        <div></div>
-                        <div></div>
+                        <div>
+
+                            <span class="section-eyebrow">
+                                Management Priorities
+                            </span>
+
+                            <h3>
+                                Management Attention Index
+                            </h3>
+
+                            <p>
+                                Transparent rules-based
+                                prioritisation of projects
+                                requiring management review.
+                                This is not a probability of
+                                project failure.
+                            </p>
+
+                        </div>
+
+
+                        <div
+                            id="attention-methodology-summary"
+                            class="attention-methodology-summary"
+                            aria-label="Attention score methodology"
+                        >
+
+                            <span>
+                                Cost
+                                <strong>/30</strong>
+                            </span>
+
+                            <span>
+                                Progress
+                                <strong>/25</strong>
+                            </span>
+
+                            <span>
+                                Critical Schedule
+                                <strong>/25</strong>
+                            </span>
+
+                            <span>
+                                Procurement
+                                <strong>/15</strong>
+                            </span>
+
+                            <span>
+                                Data Quality
+                                <strong>/5</strong>
+                            </span>
+
+                        </div>
 
                     </div>
 
-                </div>
+
+                    <div
+                        id="portfolio-attention"
+                        class="portfolio-attention"
+                    >
+
+                        <div class="skeleton-priority">
+
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+
+                        </div>
+
+                    </div>
+
+                </section>
 
             </section>
 
@@ -610,6 +707,145 @@
                 class="dashboard-section"
             >
 
+                <div class="data-quality-section-header">
+
+                    <div>
+
+                        <span class="section-eyebrow">
+                            Data Governance
+                        </span>
+
+                        <h2>
+                            Validation & Data Quality
+                        </h2>
+
+                        <p>
+                            Transparent view of records entering
+                            the validation layer, accepted records,
+                            quarantined records and logged issue
+                            events.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =========================================
+                     VALIDATION TRANSPARENCY
+                     ========================================= -->
+
+                <div
+                    id="validation-transparency"
+                    class="validation-transparency"
+                >
+
+                    <div class="validation-stat">
+
+                        <span>
+                            Source Records
+                        </span>
+
+                        <strong id="dq-source-rows">
+                            —
+                        </strong>
+
+                        <small>
+                            Presented to validation
+                        </small>
+
+                    </div>
+
+
+                    <div class="validation-stat">
+
+                        <span>
+                            Accepted Records
+                        </span>
+
+                        <strong id="dq-accepted-rows">
+                            —
+                        </strong>
+
+                        <small>
+                            Loaded to analytical layer
+                        </small>
+
+                    </div>
+
+
+                    <div class="validation-stat">
+
+                        <span>
+                            Quarantined Records
+                        </span>
+
+                        <strong id="dq-quarantined-rows">
+                            —
+                        </strong>
+
+                        <small>
+                            Excluded after validation
+                        </small>
+
+                    </div>
+
+
+                    <div class="validation-stat">
+
+                        <span>
+                            Issue Events
+                        </span>
+
+                        <strong id="dq-issue-events">
+                            —
+                        </strong>
+
+                        <small>
+                            Logged validation observations
+                        </small>
+
+                    </div>
+
+
+                    <div class="validation-stat validation-stat-highlight">
+
+                        <span>
+                            Validation Pass Rate
+                        </span>
+
+                        <strong id="dq-validation-rate">
+                            —
+                        </strong>
+
+                        <small>
+                            Accepted ÷ Source
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="validation-definition-note">
+
+                    <strong>
+                        Validation semantics
+                    </strong>
+
+                    <p>
+                        Quarantined records are invalid source
+                        records excluded from the controlled
+                        analytical layer. Issue events are
+                        validation observations and may include
+                        multiple observations for the same record,
+                        so issue-event count does not need to equal
+                        quarantined-row count.
+                    </p>
+
+                </div>
+
+
                 <div id="data-quality-dashboard">
 
                     <div class="section-skeleton">
@@ -662,7 +898,11 @@
                     </span>
 
                     <span>
-                        v1.0
+                        Validation-controlled
+                    </span>
+
+                    <span>
+                        v1.1
                     </span>
 
                 </div>
