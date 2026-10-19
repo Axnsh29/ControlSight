@@ -27,8 +27,8 @@ EXPECTED_PORTFOLIO = {
     "total_budget": 283_000_000.00,
     "actual_cost_to_date": 273_760_996.12,
     "committed_cost_to_date": 289_259_372.38,
-    "forecast_at_completion": 298_963_873.49,
-    "forecast_variance": -15_963_873.49,
+    "forecast_at_completion": 304_707_449.95,
+    "forecast_variance": -21_707_449.95,
     "planned_progress_pct": 78.33,
     "actual_progress_pct": 73.71,
     "progress_variance_pct": -4.62,
@@ -38,11 +38,11 @@ EXPECTED_PORTFOLIO = {
 
 EXPECTED_PROJECTS = {
     "PRJ-001": {
-        "forecast_at_completion": 28_429_070.33,
+        "forecast_at_completion": 30_496_695.01,
         "planned_progress_pct": 87.50,
         "actual_progress_pct": 87.50,
-        "health_status": "Green",
-        "management_status": "Green",
+        "health_status": "Amber",
+        "management_status": "Red",
     },
     "PRJ-002": {
         "forecast_at_completion": 44_486_768.69,
@@ -52,7 +52,7 @@ EXPECTED_PROJECTS = {
         "management_status": "Amber",
     },
     "PRJ-003": {
-        "forecast_at_completion": 22_978_606.83,
+        "forecast_at_completion": 24_476_546.74,
         "planned_progress_pct": 95.45,
         "actual_progress_pct": 80.44,
         "health_status": "Red",
@@ -73,14 +73,14 @@ EXPECTED_PROJECTS = {
         "management_status": "Amber",
     },
     "PRJ-006": {
-        "forecast_at_completion": 35_198_798.58,
+        "forecast_at_completion": 37_004_721.11,
         "planned_progress_pct": 90.91,
         "actual_progress_pct": 76.28,
         "health_status": "Red",
         "management_status": "Red",
     },
     "PRJ-007": {
-        "forecast_at_completion": 23_630_422.69,
+        "forecast_at_completion": 24_002_512.03,
         "planned_progress_pct": 77.78,
         "actual_progress_pct": 79.10,
         "health_status": "Green",
@@ -171,6 +171,725 @@ def load_controlled_data() -> dict[str, pd.DataFrame]:
         "data_quality": load_csv("data_quality_issues.csv"),
         "etl_audit": load_csv("etl_audit_report.csv"),
     }
+
+
+# ======================================================================
+# COST MODEL NORMALISATION
+# ======================================================================
+
+def normalise_cost_model(
+    data: dict[str, pd.DataFrame]
+) -> dict[str, pd.DataFrame]:
+    """
+    Apply deterministic financial-control rules to the synthetic
+    ControlSight cost model.
+
+    Controls
+    --------
+    1. Total planned cost cannot exceed the approved package baseline.
+
+    2. Total project planned cost cannot exceed the approved project
+       budget.
+
+    3. Source Forecast at Completion (FAC) remains the primary forecast,
+       but it cannot fall below cumulative actual or cumulative committed
+       cost at any reporting snapshot.
+
+       minimum project FAC =
+           max(cumulative actual, cumulative committed)
+
+    4. Dependent cost and forecast variance fields are recalculated after
+       normalisation.
+
+    Important
+    ---------
+    - Actual cost is never modified.
+    - Committed cost is never modified.
+    - Existing valid FAC values are preserved.
+    - The deliberate retained cost anomaly is preserved.
+    - Progress is not used to manufacture a forecast.
+    """
+
+    repaired = {
+        key: frame.copy()
+        for key, frame in data.items()
+    }
+
+    cost = repaired["cost"].copy()
+    projects = repaired["projects"].copy()
+
+    numeric_columns = [
+        "planned_cost",
+        "actual_cost",
+        "committed_cost",
+        "forecast_at_completion",
+        "package_budget",
+    ]
+
+    for column in numeric_columns:
+        cost[column] = pd.to_numeric(
+            cost[column],
+            errors="coerce",
+        )
+
+    projects["approved_budget"] = pd.to_numeric(
+        projects["approved_budget"],
+        errors="coerce",
+    )
+
+    cost["_report_month"] = normalise_date(
+        cost["report_month"]
+    )
+
+    # ------------------------------------------------------------------
+    # PACKAGE BASELINE CONTROL
+    # ------------------------------------------------------------------
+
+    package_totals = (
+        cost.groupby(
+            [
+                "project_code",
+                "package_code",
+            ],
+            as_index=False,
+        )
+        .agg(
+            planned_total=(
+                "planned_cost",
+                "sum",
+            ),
+            package_budget=(
+                "package_budget",
+                "max",
+            ),
+        )
+    )
+
+    package_totals["baseline_factor"] = 1.0
+
+    package_over_mask = (
+        package_totals["planned_total"]
+        >
+        package_totals["package_budget"]
+    )
+
+    package_totals.loc[
+        package_over_mask,
+        "baseline_factor",
+    ] = (
+        package_totals.loc[
+            package_over_mask,
+            "package_budget",
+        ]
+        /
+        package_totals.loc[
+            package_over_mask,
+            "planned_total",
+        ]
+    )
+
+    cost = cost.merge(
+        package_totals[
+            [
+                "project_code",
+                "package_code",
+                "baseline_factor",
+            ]
+        ],
+        on=[
+            "project_code",
+            "package_code",
+        ],
+        how="left",
+    )
+
+    cost["planned_cost"] = (
+        cost["planned_cost"]
+        *
+        cost["baseline_factor"].fillna(1.0)
+    )
+
+    cost = cost.drop(
+        columns=[
+            "baseline_factor",
+        ]
+    )
+
+    # ------------------------------------------------------------------
+    # PROJECT BASELINE CONTROL
+    # ------------------------------------------------------------------
+
+    project_plan_totals = (
+        cost.groupby(
+            "project_code",
+            as_index=False,
+        )["planned_cost"]
+        .sum()
+        .rename(
+            columns={
+                "planned_cost":
+                    "project_planned_total"
+            }
+        )
+    )
+
+    project_plan_totals = (
+        project_plan_totals.merge(
+            projects[
+                [
+                    "project_code",
+                    "approved_budget",
+                ]
+            ],
+            on="project_code",
+            how="left",
+        )
+    )
+
+    project_plan_totals[
+        "project_baseline_factor"
+    ] = 1.0
+
+    project_over_mask = (
+        project_plan_totals[
+            "project_planned_total"
+        ]
+        >
+        project_plan_totals[
+            "approved_budget"
+        ]
+    )
+
+    project_plan_totals.loc[
+        project_over_mask,
+        "project_baseline_factor",
+    ] = (
+        project_plan_totals.loc[
+            project_over_mask,
+            "approved_budget",
+        ]
+        /
+        project_plan_totals.loc[
+            project_over_mask,
+            "project_planned_total",
+        ]
+    )
+
+    cost = cost.merge(
+        project_plan_totals[
+            [
+                "project_code",
+                "project_baseline_factor",
+            ]
+        ],
+        on="project_code",
+        how="left",
+    )
+
+    cost["planned_cost"] = (
+        cost["planned_cost"]
+        *
+        cost[
+            "project_baseline_factor"
+        ].fillna(1.0)
+    )
+
+    cost = cost.drop(
+        columns=[
+            "project_baseline_factor",
+        ]
+    )
+
+    # ------------------------------------------------------------------
+    # FAC CONTROL
+    #
+    # FAC is a reporting snapshot. Actual and committed costs are monthly
+    # flows in this synthetic model, so they are accumulated over time.
+    # ------------------------------------------------------------------
+
+    cost = (
+        cost.sort_values(
+            [
+                "project_code",
+                "_report_month",
+                "package_code",
+            ]
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
+    repaired_snapshots = 0
+
+    for (
+        project_code,
+        project_rows
+    ) in cost.groupby(
+        "project_code",
+        sort=False,
+    ):
+
+        cumulative_actual = 0.0
+        cumulative_committed = 0.0
+
+        report_months = (
+            project_rows[
+                "_report_month"
+            ]
+            .dropna()
+            .sort_values()
+            .unique()
+        )
+
+        for report_month in report_months:
+
+            month_mask = (
+                (
+                    cost[
+                        "project_code"
+                    ]
+                    ==
+                    project_code
+                )
+                &
+                (
+                    cost[
+                        "_report_month"
+                    ]
+                    ==
+                    report_month
+                )
+            )
+
+            month_actual = float(
+                cost.loc[
+                    month_mask,
+                    "actual_cost",
+                ]
+                .fillna(0)
+                .sum()
+            )
+
+            month_committed = float(
+                cost.loc[
+                    month_mask,
+                    "committed_cost",
+                ]
+                .fillna(0)
+                .sum()
+            )
+
+            cumulative_actual += month_actual
+            cumulative_committed += month_committed
+
+            minimum_project_fac = max(
+                cumulative_actual,
+                cumulative_committed,
+            )
+
+            current_project_fac = float(
+                cost.loc[
+                    month_mask,
+                    "forecast_at_completion",
+                ]
+                .fillna(0)
+                .sum()
+            )
+
+            if (
+                current_project_fac
+                + 0.01
+                >=
+                minimum_project_fac
+            ):
+                continue
+
+            repaired_snapshots += 1
+
+            required_increase = (
+                minimum_project_fac
+                -
+                current_project_fac
+            )
+
+            month_indices = (
+                cost.index[
+                    month_mask
+                ]
+                .tolist()
+            )
+
+            current_fac_values = (
+                cost.loc[
+                    month_indices,
+                    "forecast_at_completion",
+                ]
+                .fillna(0)
+                .clip(
+                    lower=0.0
+                )
+            )
+
+            current_fac_total = float(
+                current_fac_values.sum()
+            )
+
+            if current_fac_total > 0:
+
+                weights = (
+                    current_fac_values
+                    /
+                    current_fac_total
+                )
+
+            else:
+
+                package_budgets = (
+                    cost.loc[
+                        month_indices,
+                        "package_budget",
+                    ]
+                    .fillna(0)
+                    .clip(
+                        lower=0.0
+                    )
+                )
+
+                package_budget_total = float(
+                    package_budgets.sum()
+                )
+
+                if package_budget_total > 0:
+
+                    weights = (
+                        package_budgets
+                        /
+                        package_budget_total
+                    )
+
+                else:
+
+                    weights = pd.Series(
+                        (
+                            1.0
+                            /
+                            len(
+                                month_indices
+                            )
+                        ),
+                        index=month_indices,
+                    )
+
+            cost.loc[
+                month_indices,
+                "forecast_at_completion",
+            ] = (
+                cost.loc[
+                    month_indices,
+                    "forecast_at_completion",
+                ]
+                .fillna(0)
+                +
+                (
+                    required_increase
+                    *
+                    weights.values
+                )
+            )
+
+    # ------------------------------------------------------------------
+    # RECOMPUTE DEPENDENT COST METRICS
+    # ------------------------------------------------------------------
+
+    cost[
+        "cost_variance"
+    ] = (
+        cost[
+            "planned_cost"
+        ]
+        -
+        cost[
+            "actual_cost"
+        ]
+    )
+
+    planned_denominator = (
+        cost[
+            "planned_cost"
+        ]
+        .where(
+            cost[
+                "planned_cost"
+            ]
+            !=
+            0
+        )
+    )
+
+    cost[
+        "cost_variance_pct"
+    ] = (
+        cost[
+            "cost_variance"
+        ]
+        /
+        planned_denominator
+        *
+        100
+    )
+
+    cost[
+        "forecast_variance"
+    ] = (
+        cost[
+            "package_budget"
+        ]
+        -
+        cost[
+            "forecast_at_completion"
+        ]
+    )
+
+    package_budget_denominator = (
+        cost[
+            "package_budget"
+        ]
+        .where(
+            cost[
+                "package_budget"
+            ]
+            !=
+            0
+        )
+    )
+
+    cost[
+        "forecast_variance_pct"
+    ] = (
+        cost[
+            "forecast_variance"
+        ]
+        /
+        package_budget_denominator
+        *
+        100
+    )
+
+    cost = cost.drop(
+        columns=[
+            "_report_month",
+        ]
+    )
+
+    repaired["cost"] = cost
+
+    # ------------------------------------------------------------------
+    # BUILD-TIME CONTROL AUDIT
+    # ------------------------------------------------------------------
+
+    final_project_plan = (
+        cost.groupby(
+            "project_code",
+            as_index=False,
+        )[
+            "planned_cost"
+        ]
+        .sum()
+    )
+
+    final_project_plan = (
+        final_project_plan.merge(
+            projects[
+                [
+                    "project_code",
+                    "approved_budget",
+                ]
+            ],
+            on="project_code",
+            how="left",
+        )
+    )
+
+    baseline_violations = (
+        final_project_plan[
+            (
+                final_project_plan[
+                    "planned_cost"
+                ]
+                >
+                final_project_plan[
+                    "approved_budget"
+                ]
+                +
+                0.01
+            )
+        ]
+    )
+
+    if not baseline_violations.empty:
+
+        raise AssertionError(
+            "Cost baseline control failed: "
+            "one or more projects have cumulative planned "
+            "cost above approved budget."
+        )
+
+    audit_cost = cost.copy()
+
+    audit_cost[
+        "_report_month"
+    ] = normalise_date(
+        audit_cost[
+            "report_month"
+        ]
+    )
+
+    latest_package_rows = (
+        audit_cost
+        .sort_values(
+            "_report_month"
+        )
+        .groupby(
+            [
+                "project_code",
+                "package_code",
+            ],
+            as_index=False,
+        )
+        .tail(1)
+    )
+
+    latest_fac = (
+        latest_package_rows
+        .groupby(
+            "project_code",
+            as_index=False,
+        )[
+            "forecast_at_completion"
+        ]
+        .sum()
+    )
+
+    project_actual = (
+        audit_cost.groupby(
+            "project_code",
+            as_index=False,
+        )[
+            "actual_cost"
+        ]
+        .sum()
+        .rename(
+            columns={
+                "actual_cost":
+                    "actual_cost_to_date"
+            }
+        )
+    )
+
+    project_committed = (
+        audit_cost.groupby(
+            "project_code",
+            as_index=False,
+        )[
+            "committed_cost"
+        ]
+        .sum()
+        .rename(
+            columns={
+                "committed_cost":
+                    "committed_cost_to_date"
+            }
+        )
+    )
+
+    audit = (
+        latest_fac
+        .merge(
+            project_actual,
+            on="project_code",
+            how="left",
+        )
+        .merge(
+            project_committed,
+            on="project_code",
+            how="left",
+        )
+    )
+
+    fac_actual_violations = (
+        audit[
+            (
+                audit[
+                    "forecast_at_completion"
+                ]
+                +
+                0.01
+                <
+                audit[
+                    "actual_cost_to_date"
+                ]
+            )
+        ]
+    )
+
+    fac_commitment_violations = (
+        audit[
+            (
+                audit[
+                    "forecast_at_completion"
+                ]
+                +
+                0.01
+                <
+                audit[
+                    "committed_cost_to_date"
+                ]
+            )
+        ]
+    )
+
+    if not fac_actual_violations.empty:
+
+        raise AssertionError(
+            "FAC control failed: "
+            "one or more projects have FAC below "
+            "Actual Cost to Date."
+        )
+
+    if not fac_commitment_violations.empty:
+
+        raise AssertionError(
+            "FAC control failed: "
+            "one or more projects have FAC below "
+            "Committed Cost to Date."
+        )
+
+    print(
+        "\nCost-model controls applied:"
+    )
+
+    print(
+        "  FAC snapshots repaired: "
+        f"{repaired_snapshots:,}"
+    )
+
+    print(
+        "  Baseline violations remaining: "
+        f"{len(baseline_violations):,}"
+    )
+
+    print(
+        "  FAC < actual violations remaining: "
+        f"{len(fac_actual_violations):,}"
+    )
+
+    print(
+        "  FAC < committed violations remaining: "
+        f"{len(fac_commitment_violations):,}"
+    )
+
+    return repaired
 
 
 # ======================================================================
@@ -1197,6 +1916,10 @@ def build_database(
 
     data = load_controlled_data()
 
+    data = normalise_cost_model(
+        data
+    )
+
     print("\nControlled datasets loaded:")
     print(
         f"  Projects:     {len(data['projects']):,}"
@@ -1223,7 +1946,9 @@ def build_database(
         f"  DQ issues:    {len(data['data_quality']):,}"
     )
 
-    dim_date = build_date_dimension(data)
+    dim_date = build_date_dimension(
+        data
+    )
 
     dim_project = prepare_projects(
         data["projects"]
