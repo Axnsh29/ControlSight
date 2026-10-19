@@ -1949,11 +1949,6 @@ input:focus-visible {
     max-width: 760px
 ) {
 
-    /*
-     * Keep reporting snapshot visible.
-     * Previous version hid it completely.
-     */
-
     .snapshot-indicator {
 
         display: flex;
@@ -1962,21 +1957,21 @@ input:focus-visible {
             auto;
 
         padding-right:
-            7px;
+            8px;
     }
 
 
     .snapshot-label {
 
         font-size:
-            6px;
+            11px;
     }
 
 
     .snapshot-indicator strong {
 
         font-size:
-            8px;
+            12px;
     }
 
 
@@ -1990,14 +1985,48 @@ input:focus-visible {
     .hero-copy h2 {
 
         font-size:
-            19px;
+            20px;
     }
 
 
     .hero-copy p {
 
         font-size:
-            10px;
+            13px;
+
+        line-height:
+            1.6;
+    }
+
+
+    .hero-capabilities span {
+
+        font-size:
+            11px;
+
+        padding:
+            6px 9px;
+    }
+
+
+    .demo-disclosure > span {
+
+        font-size:
+            11px;
+    }
+
+
+    .demo-disclosure strong {
+
+        font-size:
+            14px;
+    }
+
+
+    .demo-disclosure p {
+
+        font-size:
+            12px;
     }
 
 
@@ -2008,27 +2037,46 @@ input:focus-visible {
     }
 
 
+    .exposure-header p {
+
+        font-size:
+            12px;
+    }
+
+
     .exposure-legend {
 
         justify-content:
             flex-start;
+
+        font-size:
+            11px;
     }
 
-
-    /*
-     * Keep cost values visible on mobile.
-     * Previous CSS removed them below 760px.
-     */
 
     .exposure-row {
 
         grid-template-columns:
-            100px
+            105px
             minmax(0, 1fr)
-            72px;
+            82px;
 
         gap:
-            9px;
+            10px;
+    }
+
+
+    .exposure-project strong {
+
+        font-size:
+            12px;
+    }
+
+
+    .exposure-project span {
+
+        font-size:
+            11px;
     }
 
 
@@ -2042,28 +2090,43 @@ input:focus-visible {
     .exposure-values strong {
 
         font-size:
-            8px;
+            12px;
     }
 
 
     .exposure-values span {
 
         font-size:
-            7px;
-    }
-
-
-    .exposure-project strong {
-
-        font-size:
-            8px;
+            11px;
     }
 
 
     .portfolio-attention-panel {
 
         padding:
-            15px;
+            16px;
+    }
+
+
+    .portfolio-attention-panel >
+    .attention-header p {
+
+        font-size:
+            12px;
+    }
+
+
+    .attention-methodology-summary span {
+
+        font-size:
+            11px;
+    }
+
+
+    .attention-methodology-summary strong {
+
+        font-size:
+            11px;
     }
 
 
@@ -2074,6 +2137,34 @@ input:focus-visible {
     }
 
 
+    .attention-component span {
+
+        font-size:
+            11px;
+    }
+
+
+    .attention-component strong {
+
+        font-size:
+            12px;
+    }
+
+
+    .attention-summary-item span {
+
+        font-size:
+            11px;
+    }
+
+
+    .attention-summary-item strong {
+
+        font-size:
+            17px;
+    }
+
+
     .attention-methodology {
 
         flex-direction:
@@ -2081,6 +2172,15 @@ input:focus-visible {
 
         align-items:
             flex-start;
+    }
+
+
+    .attention-methodology span,
+    .attention-methodology p,
+    .attention-methodology > strong {
+
+        font-size:
+            11px;
     }
 
 
@@ -2101,6 +2201,13 @@ input:focus-visible {
     .validation-stat {
 
         padding:
+            12px;
+    }
+
+
+    .validation-stat > span {
+
+        font-size:
             11px;
     }
 
@@ -2108,7 +2215,14 @@ input:focus-visible {
     .validation-stat > strong {
 
         font-size:
-            15px;
+            17px;
+    }
+
+
+    .validation-stat small {
+
+        font-size:
+            11px;
     }
 
 
@@ -2119,6 +2233,14 @@ input:focus-visible {
 
         gap:
             5px;
+    }
+
+
+    .validation-definition-note strong,
+    .validation-definition-note p {
+
+        font-size:
+            11px;
     }
 
 
@@ -2135,6 +2257,14 @@ input:focus-visible {
     }
 
 
+    .dq-validation-formula strong,
+    .dq-validation-formula span {
+
+        font-size:
+            12px;
+    }
+
+
     .dq-table-wrapper {
 
         max-height:
@@ -2145,10 +2275,48 @@ input:focus-visible {
     }
 
 
+    .table-container table,
+    .dq-table {
+
+        font-size:
+            11px;
+    }
+
+
+    .table-container th,
+    .dq-table th {
+
+        font-size:
+            11px;
+    }
+
+
+    .table-container td,
+    .dq-table td {
+
+        font-size:
+            11px;
+    }
+
+
     .dashboard-footer {
 
         align-items:
             flex-start;
+    }
+
+
+    .dashboard-footer strong {
+
+        font-size:
+            11px;
+    }
+
+
+    .dashboard-footer span {
+
+        font-size:
+            10px;
     }
 
 
@@ -2158,7 +2326,7 @@ input:focus-visible {
             column;
 
         gap:
-            3px;
+            4px;
     }
 
 }
@@ -2184,21 +2352,28 @@ input:focus-visible {
     .hero-copy h2 {
 
         font-size:
-            17px;
+            18px;
+    }
+
+
+    .hero-copy p {
+
+        font-size:
+            13px;
     }
 
 
     .topbar-actions {
 
         gap:
-            6px;
+            7px;
     }
 
 
     .live-data {
 
         font-size:
-            7px;
+            11px;
     }
 
 
@@ -2222,30 +2397,47 @@ input:focus-visible {
     .snapshot-indicator strong {
 
         font-size:
-            7px;
+            11px;
     }
 
 
     .exposure-row {
 
         grid-template-columns:
-            82px
+            90px
             minmax(0, 1fr)
-            62px;
+            76px;
+
+        gap:
+            8px;
+    }
+
+
+    .exposure-project strong {
+
+        font-size:
+            11px;
+    }
+
+
+    .exposure-project span {
+
+        font-size:
+            10px;
     }
 
 
     .exposure-values strong {
 
         font-size:
-            7px;
+            12px;
     }
 
 
     .exposure-values span {
 
         font-size:
-            6.5px;
+            11px;
     }
 
 
@@ -2259,7 +2451,7 @@ input:focus-visible {
     .attention-methodology-summary span {
 
         font-size:
-            7px;
+            10px;
     }
 
 
@@ -2303,6 +2495,16 @@ input:focus-visible {
 
         margin-top:
             0;
+
+        font-size:
+            18px;
+    }
+
+
+    .validation-stat > span {
+
+        font-size:
+            12px;
     }
 
 
@@ -2310,6 +2512,9 @@ input:focus-visible {
 
         grid-column:
             1;
+
+        font-size:
+            11px;
     }
 
 
@@ -2331,7 +2536,7 @@ input:focus-visible {
     .table-container td {
 
         font-size:
-            8px;
+            11px;
     }
 
 
@@ -2346,14 +2551,21 @@ input:focus-visible {
     .dq-table td {
 
         font-size:
-            8px;
+            11px;
+    }
+
+
+    .dq-register-count {
+
+        font-size:
+            10px;
     }
 
 
     .chart-axis-label {
 
         font-size:
-            11px;
+            12px;
     }
 
 
