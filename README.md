@@ -430,6 +430,8 @@ This keeps the methodology explainable and auditable.
 
 ## Architecture
 
+![ControlSight Architecture](docs/screenshots/architecture.png)
+
 ```text
 ┌──────────────────────────────┐
 │ Synthetic EPC-Style Data     │
