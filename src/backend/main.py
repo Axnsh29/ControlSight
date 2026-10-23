@@ -1,10 +1,18 @@
 from pathlib import Path
 import csv
 import sqlite3
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+
+from src.backend.workflow import router as workflow_router
+from src.backend.upload import router as upload_router
+from src.backend.attention import router as attention_router
+from src.backend.change_control import router as change_control_router
+from src.backend.risk_cashflow import router as risk_cashflow_router
+from src.backend.report_pack import router as report_pack_router
 
 
 # ============================================================
@@ -17,7 +25,31 @@ app = FastAPI(
         "Backend API for the ControlSight "
         "project controls intelligence platform"
     ),
-    version="1.1.0",
+    version="1.3.1",
+)
+
+app.include_router(
+    workflow_router
+)
+
+app.include_router(
+    upload_router
+)
+
+app.include_router(
+    attention_router
+)
+
+app.include_router(
+    change_control_router
+)
+
+app.include_router(
+    risk_cashflow_router
+)
+
+app.include_router(
+    report_pack_router
 )
 
 
@@ -25,7 +57,11 @@ app = FastAPI(
 # PATHS
 # ============================================================
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = (
+    Path(__file__)
+    .resolve()
+    .parents[2]
+)
 
 DATABASE_PATH = (
     PROJECT_ROOT
@@ -80,26 +116,33 @@ ATTENTION_SCORE_DESCRIPTION = (
 )
 
 
+FORECAST_CREDIBILITY_THRESHOLDS = {
+    "watch": 5.0,
+    "high": 10.0,
+    "critical": 20.0,
+}
+
+
 # ============================================================
 # DATABASE CONNECTION
 # ============================================================
 
 def get_db_connection():
-    """
-    Open a SQLite connection to the ControlSight
-    analytical database.
-    """
 
     if not DATABASE_PATH.exists():
+
         raise FileNotFoundError(
-            f"Database not found at: {DATABASE_PATH}"
+            f"Database not found at: "
+            f"{DATABASE_PATH}"
         )
 
     connection = sqlite3.connect(
         DATABASE_PATH
     )
 
-    connection.row_factory = sqlite3.Row
+    connection.row_factory = (
+        sqlite3.Row
+    )
 
     return connection
 
@@ -109,13 +152,6 @@ def get_db_connection():
 # ============================================================
 
 def get_validation_metrics():
-    """
-    Read the ETL audit report and calculate transparent
-    validation counts.
-
-    Validation Pass Rate =
-        accepted analytical rows / source operational rows
-    """
 
     if not ETL_AUDIT_PATH.exists():
 
@@ -125,14 +161,19 @@ def get_validation_metrics():
             "quarantined_rows": None,
             "validation_pass_rate": None,
             "formula": (
-                "accepted_rows / source_rows * 100"
+                "accepted_rows / "
+                "source_rows * 100"
             ),
-            "source": "etl_audit_report.csv",
+            "source": (
+                "etl_audit_report.csv"
+            ),
             "available": False,
         }
 
+
     source_rows = 0
     accepted_rows = 0
+
 
     with ETL_AUDIT_PATH.open(
         "r",
@@ -147,6 +188,7 @@ def get_validation_metrics():
         for row in reader:
 
             try:
+
                 source_rows += int(
                     float(
                         row.get(
@@ -156,13 +198,17 @@ def get_validation_metrics():
                         or 0
                     )
                 )
+
             except (
                 TypeError,
                 ValueError,
             ):
+
                 pass
 
+
             try:
+
                 accepted_rows += int(
                     float(
                         row.get(
@@ -172,11 +218,14 @@ def get_validation_metrics():
                         or 0
                     )
                 )
+
             except (
                 TypeError,
                 ValueError,
             ):
+
                 pass
+
 
     quarantined_rows = max(
         source_rows
@@ -184,6 +233,7 @@ def get_validation_metrics():
         accepted_rows,
         0,
     )
+
 
     if source_rows > 0:
 
@@ -200,18 +250,442 @@ def get_validation_metrics():
 
         validation_pass_rate = None
 
+
     return {
-        "source_rows": source_rows,
-        "accepted_rows": accepted_rows,
-        "quarantined_rows": quarantined_rows,
-        "validation_pass_rate": (
-            validation_pass_rate
+        "source_rows":
+            source_rows,
+
+        "accepted_rows":
+            accepted_rows,
+
+        "quarantined_rows":
+            quarantined_rows,
+
+        "validation_pass_rate":
+            validation_pass_rate,
+
+        "formula":
+            (
+                "accepted_rows / "
+                "source_rows * 100"
+            ),
+
+        "source":
+            "etl_audit_report.csv",
+
+        "available":
+            True,
+    }
+
+
+# ============================================================
+# REPORTING PERIOD HELPERS
+# ============================================================
+
+def validate_reporting_period(
+    connection,
+    reporting_period: Optional[str],
+):
+
+    if reporting_period is None:
+        return None
+
+
+    row = connection.execute(
+        """
+        SELECT 1
+
+        FROM fact_cost fc
+
+        JOIN dim_date dd
+            ON fc.date_key
+            = dd.date_key
+
+        WHERE dd.year_month = ?
+
+        LIMIT 1
+        """,
+        (
+            reporting_period,
         ),
-        "formula": (
-            "accepted_rows / source_rows * 100"
+    ).fetchone()
+
+
+    if row is None:
+
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"Reporting period "
+                f"{reporting_period} "
+                "not found"
+            ),
+        )
+
+
+    return reporting_period
+
+
+def get_latest_reporting_period(
+    connection,
+    project_code: Optional[str] = None,
+):
+
+    if project_code:
+
+        row = connection.execute(
+            """
+            SELECT
+                dd.date,
+                dd.year_month
+
+            FROM fact_cost fc
+
+            JOIN dim_date dd
+                ON fc.date_key
+                = dd.date_key
+
+            WHERE fc.project_code = ?
+
+            ORDER BY dd.date DESC
+
+            LIMIT 1
+            """,
+            (
+                project_code,
+            ),
+        ).fetchone()
+
+    else:
+
+        row = connection.execute(
+            """
+            SELECT
+                dd.date,
+                dd.year_month
+
+            FROM fact_cost fc
+
+            JOIN dim_date dd
+                ON fc.date_key
+                = dd.date_key
+
+            ORDER BY dd.date DESC
+
+            LIMIT 1
+            """
+        ).fetchone()
+
+
+    if row is None:
+        return None
+
+
+    return dict(
+        row
+    )
+
+
+def get_period_cost_snapshot(
+    connection,
+    project_code: str,
+    reporting_period: str,
+):
+
+    row = connection.execute(
+        """
+        WITH monthly_cost AS (
+
+            SELECT
+                fc.project_code,
+                dd.date,
+                dd.year_month,
+
+                SUM(
+                    fc.planned_cost
+                ) AS monthly_planned_cost,
+
+                SUM(
+                    fc.actual_cost
+                ) AS monthly_actual_cost,
+
+                SUM(
+                    fc.committed_cost
+                ) AS monthly_committed_cost,
+
+                SUM(
+                    fc.forecast_at_completion
+                ) AS forecast_at_completion
+
+            FROM fact_cost fc
+
+            JOIN dim_date dd
+                ON fc.date_key
+                = dd.date_key
+
+            WHERE
+                fc.project_code = ?
+                AND dd.year_month <= ?
+
+            GROUP BY
+                fc.project_code,
+                dd.date,
+                dd.year_month
         ),
-        "source": "etl_audit_report.csv",
-        "available": True,
+
+        cumulative AS (
+
+            SELECT
+                project_code,
+                date,
+                year_month,
+
+                SUM(
+                    monthly_planned_cost
+                ) OVER (
+                    ORDER BY date
+                )
+                AS cumulative_planned_cost,
+
+                SUM(
+                    monthly_actual_cost
+                ) OVER (
+                    ORDER BY date
+                )
+                AS cumulative_actual_cost,
+
+                SUM(
+                    monthly_committed_cost
+                ) OVER (
+                    ORDER BY date
+                )
+                AS cumulative_committed_cost,
+
+                forecast_at_completion
+
+            FROM monthly_cost
+        )
+
+        SELECT *
+
+        FROM cumulative
+
+        WHERE year_month = ?
+
+        ORDER BY date DESC
+
+        LIMIT 1
+        """,
+        (
+            project_code,
+            reporting_period,
+            reporting_period,
+        ),
+    ).fetchone()
+
+
+    if row is None:
+        return None
+
+
+    return dict(
+        row
+    )
+
+
+def get_period_progress_snapshot(
+    connection,
+    project_code: str,
+    reporting_period: str,
+):
+
+    row = connection.execute(
+        """
+        SELECT
+            fp.project_code,
+            dd.date,
+            dd.year_month,
+            fp.planned_progress_pct,
+            fp.actual_progress_pct,
+            fp.progress_variance_pct,
+            fp.behind_schedule_flag
+
+        FROM fact_progress fp
+
+        JOIN dim_date dd
+            ON fp.date_key
+            = dd.date_key
+
+        WHERE
+            fp.project_code = ?
+            AND dd.year_month = ?
+
+        ORDER BY dd.date DESC
+
+        LIMIT 1
+        """,
+        (
+            project_code,
+            reporting_period,
+        ),
+    ).fetchone()
+
+
+    if row is None:
+        return None
+
+
+    return dict(
+        row
+    )
+
+
+# ============================================================
+# FORECAST CREDIBILITY HELPER
+# ============================================================
+
+def calculate_forecast_credibility(
+    actual_cost,
+    actual_progress_pct,
+    reported_fac,
+):
+
+    actual_cost = float(
+        actual_cost
+        or 0
+    )
+
+    actual_progress_pct = float(
+        actual_progress_pct
+        or 0
+    )
+
+    reported_fac = float(
+        reported_fac
+        or 0
+    )
+
+
+    if (
+        actual_progress_pct <= 0
+        or
+        reported_fac <= 0
+    ):
+
+        return {
+
+            "progress_implied_eac":
+                None,
+
+            "forecast_credibility_gap":
+                None,
+
+            "forecast_credibility_gap_pct":
+                None,
+
+            "forecast_credibility_status":
+                "Unavailable",
+
+            "forecast_credibility_flag":
+                0,
+        }
+
+
+    progress_implied_eac = (
+        actual_cost
+        /
+        (
+            actual_progress_pct
+            /
+            100
+        )
+    )
+
+
+    forecast_credibility_gap = (
+        progress_implied_eac
+        -
+        reported_fac
+    )
+
+
+    forecast_credibility_gap_pct = (
+        forecast_credibility_gap
+        /
+        reported_fac
+        *
+        100
+    )
+
+
+    positive_gap_pct = max(
+        forecast_credibility_gap_pct,
+        0,
+    )
+
+
+    if (
+        positive_gap_pct
+        >=
+        FORECAST_CREDIBILITY_THRESHOLDS[
+            "critical"
+        ]
+    ):
+
+        status = "Critical"
+
+    elif (
+        positive_gap_pct
+        >=
+        FORECAST_CREDIBILITY_THRESHOLDS[
+            "high"
+        ]
+    ):
+
+        status = "High"
+
+    elif (
+        positive_gap_pct
+        >=
+        FORECAST_CREDIBILITY_THRESHOLDS[
+            "watch"
+        ]
+    ):
+
+        status = "Watch"
+
+    else:
+
+        status = "Normal"
+
+
+    return {
+
+        "progress_implied_eac":
+            round(
+                progress_implied_eac,
+                2,
+            ),
+
+        "forecast_credibility_gap":
+            round(
+                forecast_credibility_gap,
+                2,
+            ),
+
+        "forecast_credibility_gap_pct":
+            round(
+                forecast_credibility_gap_pct,
+                2,
+            ),
+
+        "forecast_credibility_status":
+            status,
+
+        "forecast_credibility_flag":
+            int(
+                status != "Normal"
+            ),
     }
 
 
@@ -221,13 +695,11 @@ def get_validation_metrics():
 
 @app.get("/")
 def dashboard():
-    """
-    Serve the ControlSight management dashboard.
-    """
 
     return FileResponse(
         FRONTEND_PATH
-        / "index.html"
+        /
+        "index.html"
     )
 
 
@@ -236,18 +708,21 @@ app.mount(
     StaticFiles(
         directory=(
             FRONTEND_PATH
-            / "css"
+            /
+            "css"
         )
     ),
     name="css",
 )
+
 
 app.mount(
     "/js",
     StaticFiles(
         directory=(
             FRONTEND_PATH
-            / "js"
+            /
+            "js"
         )
     ),
     name="js",
@@ -258,11 +733,10 @@ app.mount(
 # PORTFOLIO KPIs
 # ============================================================
 
-@app.get("/api/kpis")
+@app.get(
+    "/api/kpis"
+)
 def get_portfolio_kpis():
-    """
-    Return portfolio-level management KPIs.
-    """
 
     try:
 
@@ -271,23 +745,29 @@ def get_portfolio_kpis():
             row = connection.execute(
                 """
                 SELECT *
+
                 FROM report_portfolio_kpis
+
                 LIMIT 1
                 """
             ).fetchone()
+
 
             if row is None:
 
                 raise HTTPException(
                     status_code=404,
                     detail=(
-                        "No portfolio KPI record found"
+                        "No portfolio KPI "
+                        "record found"
                     ),
                 )
+
 
             return dict(
                 row
             )
+
 
     except FileNotFoundError as error:
 
@@ -303,32 +783,16 @@ def get_portfolio_kpis():
 # PROJECT PORTFOLIO
 # ============================================================
 
-@app.get("/api/projects")
+@app.get(
+    "/api/projects"
+)
 def get_projects():
-    """
-    Return project-level management scorecards.
-    """
 
     with get_db_connection() as connection:
 
         rows = connection.execute(
             """
-            SELECT
-                project_code,
-                project_name,
-                approved_budget,
-                actual_cost_to_date,
-                forecast_at_completion,
-                forecast_variance,
-                forecast_variance_pct,
-                planned_progress_pct,
-                actual_progress_pct,
-                progress_variance_pct,
-                health_status,
-                management_status,
-                total_procurement_items,
-                delayed_items,
-                critical_delays
+            SELECT *
 
             FROM report_management_scorecard
 
@@ -336,35 +800,72 @@ def get_projects():
             """
         ).fetchall()
 
+
         return [
-            dict(
-                row
-            )
+            dict(row)
             for row in rows
         ]
+
+
+# ============================================================
+# REPORTING PERIODS
+# ============================================================
+
+@app.get(
+    "/api/reporting-periods"
+)
+def get_reporting_periods():
+
+    with get_db_connection() as connection:
+
+        rows = connection.execute(
+            """
+            SELECT DISTINCT
+                dd.date,
+                dd.year_month
+
+            FROM fact_cost fc
+
+            JOIN dim_date dd
+                ON fc.date_key
+                = dd.date_key
+
+            ORDER BY dd.date DESC
+            """
+        ).fetchall()
+
+
+        periods = [
+            dict(row)
+            for row in rows
+        ]
+
+
+        return {
+
+            "period_count":
+                len(periods),
+
+            "default_reporting_period":
+                (
+                    periods[0]
+                    if periods
+                    else None
+                ),
+
+            "periods":
+                periods,
+        }
 
 
 # ============================================================
 # DATA QUALITY
 # ============================================================
 
-@app.get("/api/data-quality")
+@app.get(
+    "/api/data-quality"
+)
 def get_data_quality():
-    """
-    Return the data-quality issue register, grouped issue
-    summary and transparent validation counts.
-
-    Important distinction:
-
-    - quarantined_rows = invalid source records excluded
-      from the controlled analytical layer.
-
-    - issue_events = validation/data-quality observations
-      logged by the ETL process.
-
-    One source row may generate more than one issue event,
-    so issue_events do not have to equal quarantined_rows.
-    """
 
     with get_db_connection() as connection:
 
@@ -385,6 +886,7 @@ def get_data_quality():
             """
         ).fetchall()
 
+
         summary = connection.execute(
             """
             SELECT
@@ -404,92 +906,71 @@ def get_data_quality():
             """
         ).fetchall()
 
+
         validation = (
             get_validation_metrics()
         )
+
 
         issue_events = len(
             issues
         )
 
+
         return {
-            "source_rows": (
+
+            "source_rows":
                 validation[
                     "source_rows"
-                ]
-            ),
-            "accepted_rows": (
+                ],
+
+            "accepted_rows":
                 validation[
                     "accepted_rows"
-                ]
-            ),
-            "quarantined_rows": (
+                ],
+
+            "quarantined_rows":
                 validation[
                     "quarantined_rows"
-                ]
-            ),
-            "issue_events": (
-                issue_events
-            ),
-            "total_issues": (
-                issue_events
-            ),
-            "validation_pass_rate": (
+                ],
+
+            "issue_events":
+                issue_events,
+
+            "total_issues":
+                issue_events,
+
+            "validation_pass_rate":
                 validation[
                     "validation_pass_rate"
-                ]
-            ),
-            "validation_formula": (
+                ],
+
+            "validation_formula":
                 validation[
                     "formula"
-                ]
-            ),
-            "validation_source": (
+                ],
+
+            "validation_source":
                 validation[
                     "source"
-                ]
-            ),
-            "validation_metrics_available": (
+                ],
+
+            "validation_metrics_available":
                 validation[
                     "available"
-                ]
-            ),
-            "definitions": {
-                "source_rows": (
-                    "Operational records presented "
-                    "to the ETL validation layer."
-                ),
-                "accepted_rows": (
-                    "Records accepted into the "
-                    "controlled analytical layer."
-                ),
-                "quarantined_rows": (
-                    "Invalid source records excluded "
-                    "from the controlled analytical "
-                    "layer."
-                ),
-                "issue_events": (
-                    "Validation observations logged "
-                    "during ETL. Multiple issue events "
-                    "may relate to one source record."
-                ),
-                "validation_pass_rate": (
-                    "Accepted rows divided by source "
-                    "rows, expressed as a percentage."
-                ),
-            },
-            "summary": [
-                dict(
-                    row
-                )
-                for row in summary
-            ],
-            "issues": [
-                dict(
-                    row
-                )
-                for row in issues
-            ],
+                ],
+
+            "summary":
+                [
+                    dict(row)
+                    for row in summary
+                ],
+
+            "issues":
+                [
+                    dict(row)
+                    for row in issues
+                ],
         }
 
 
@@ -497,12 +978,10 @@ def get_data_quality():
 # COST ANOMALIES
 # ============================================================
 
-@app.get("/api/cost-anomalies")
+@app.get(
+    "/api/cost-anomalies"
+)
 def get_cost_anomalies():
-    """
-    Return cost records explicitly flagged for
-    management/data-quality investigation.
-    """
 
     with get_db_connection() as connection:
 
@@ -517,17 +996,20 @@ def get_cost_anomalies():
                 fc.actual_cost,
 
                 fc.actual_cost
-                    - fc.planned_cost
+                    -
+                fc.planned_cost
                     AS cost_over_plan,
 
                 ROUND(
                     fc.actual_cost
-                    / NULLIF(
+                    /
+                    NULLIF(
                         fc.planned_cost,
                         0
                     ),
                     2
-                ) AS actual_to_plan_ratio,
+                )
+                    AS actual_to_plan_ratio,
 
                 fc.forecast_at_completion,
                 fc.cost_anomaly_flag
@@ -544,16 +1026,17 @@ def get_cost_anomalies():
             """
         ).fetchall()
 
+
         return {
-            "total_anomalies": len(
-                rows
-            ),
-            "anomalies": [
-                dict(
-                    row
-                )
-                for row in rows
-            ],
+
+            "total_anomalies":
+                len(rows),
+
+            "anomalies":
+                [
+                    dict(row)
+                    for row in rows
+                ],
         }
 
 
@@ -565,23 +1048,38 @@ def get_cost_anomalies():
     "/api/projects/{project_code}/cost-trend"
 )
 def get_project_cost_trend(
-    project_code: str
+    project_code: str,
+    reporting_period: Optional[str] = None,
 ):
-    """
-    Return cumulative cost performance by reporting period.
-
-    Planned, actual and committed costs are monthly flows
-    and are accumulated through time.
-
-    Forecast at Completion is a reporting snapshot and is
-    aggregated only within each reporting period, never
-    across reporting periods.
-    """
 
     with get_db_connection() as connection:
 
+        validate_reporting_period(
+            connection,
+            reporting_period,
+        )
+
+
+        where_period = ""
+
+        parameters = [
+            project_code
+        ]
+
+
+        if reporting_period:
+
+            where_period = (
+                "AND dd.year_month <= ?"
+            )
+
+            parameters.append(
+                reporting_period
+            )
+
+
         rows = connection.execute(
-            """
+            f"""
             WITH monthly_cost AS (
 
                 SELECT
@@ -591,23 +1089,28 @@ def get_project_cost_trend(
 
                     SUM(
                         fc.planned_cost
-                    ) AS monthly_planned_cost,
+                    )
+                        AS monthly_planned_cost,
 
                     SUM(
                         fc.actual_cost
-                    ) AS monthly_actual_cost,
+                    )
+                        AS monthly_actual_cost,
 
                     SUM(
                         fc.committed_cost
-                    ) AS monthly_committed_cost,
+                    )
+                        AS monthly_committed_cost,
 
                     SUM(
                         fc.forecast_at_completion
-                    ) AS forecast_at_completion,
+                    )
+                        AS forecast_at_completion,
 
                     SUM(
                         fc.cost_anomaly_flag
-                    ) AS anomaly_count
+                    )
+                        AS anomaly_count
 
                 FROM fact_cost fc
 
@@ -616,6 +1119,8 @@ def get_project_cost_trend(
                     = dd.date_key
 
                 WHERE fc.project_code = ?
+
+                {where_period}
 
                 GROUP BY
                     fc.project_code,
@@ -631,49 +1136,59 @@ def get_project_cost_trend(
                 ROUND(
                     monthly_planned_cost,
                     2
-                ) AS monthly_planned_cost,
+                )
+                    AS monthly_planned_cost,
 
                 ROUND(
                     monthly_actual_cost,
                     2
-                ) AS monthly_actual_cost,
+                )
+                    AS monthly_actual_cost,
 
                 ROUND(
                     monthly_committed_cost,
                     2
-                ) AS monthly_committed_cost,
+                )
+                    AS monthly_committed_cost,
 
                 ROUND(
                     SUM(
                         monthly_planned_cost
-                    ) OVER (
+                    )
+                    OVER (
                         ORDER BY date
                     ),
                     2
-                ) AS cumulative_planned_cost,
+                )
+                    AS cumulative_planned_cost,
 
                 ROUND(
                     SUM(
                         monthly_actual_cost
-                    ) OVER (
+                    )
+                    OVER (
                         ORDER BY date
                     ),
                     2
-                ) AS cumulative_actual_cost,
+                )
+                    AS cumulative_actual_cost,
 
                 ROUND(
                     SUM(
                         monthly_committed_cost
-                    ) OVER (
+                    )
+                    OVER (
                         ORDER BY date
                     ),
                     2
-                ) AS cumulative_committed_cost,
+                )
+                    AS cumulative_committed_cost,
 
                 ROUND(
                     forecast_at_completion,
                     2
-                ) AS forecast_at_completion,
+                )
+                    AS forecast_at_completion,
 
                 anomaly_count
 
@@ -681,34 +1196,40 @@ def get_project_cost_trend(
 
             ORDER BY date
             """,
-            (
-                project_code,
+            tuple(
+                parameters
             ),
         ).fetchall()
+
 
         if not rows:
 
             raise HTTPException(
                 status_code=404,
                 detail=(
-                    f"Project {project_code} "
+                    f"Project "
+                    f"{project_code} "
                     "not found"
                 ),
             )
 
+
         return {
-            "project_code": (
-                project_code
-            ),
-            "periods": len(
-                rows
-            ),
-            "cost_trend": [
-                dict(
-                    row
-                )
-                for row in rows
-            ],
+
+            "project_code":
+                project_code,
+
+            "reporting_period":
+                reporting_period,
+
+            "periods":
+                len(rows),
+
+            "cost_trend":
+                [
+                    dict(row)
+                    for row in rows
+                ],
         }
 
 
@@ -720,16 +1241,38 @@ def get_project_cost_trend(
     "/api/projects/{project_code}/progress-trend"
 )
 def get_project_progress_trend(
-    project_code: str
+    project_code: str,
+    reporting_period: Optional[str] = None,
 ):
-    """
-    Return planned versus actual progress through time.
-    """
 
     with get_db_connection() as connection:
 
+        validate_reporting_period(
+            connection,
+            reporting_period,
+        )
+
+
+        where_period = ""
+
+        parameters = [
+            project_code
+        ]
+
+
+        if reporting_period:
+
+            where_period = (
+                "AND dd.year_month <= ?"
+            )
+
+            parameters.append(
+                reporting_period
+            )
+
+
         rows = connection.execute(
-            """
+            f"""
             SELECT
                 fp.project_code,
                 dd.date,
@@ -747,36 +1290,44 @@ def get_project_progress_trend(
 
             WHERE fp.project_code = ?
 
+            {where_period}
+
             ORDER BY dd.date
             """,
-            (
-                project_code,
+            tuple(
+                parameters
             ),
         ).fetchall()
+
 
         if not rows:
 
             raise HTTPException(
                 status_code=404,
                 detail=(
-                    f"Project {project_code} "
+                    f"Project "
+                    f"{project_code} "
                     "not found"
                 ),
             )
 
+
         return {
-            "project_code": (
-                project_code
-            ),
-            "periods": len(
-                rows
-            ),
-            "progress_trend": [
-                dict(
-                    row
-                )
-                for row in rows
-            ],
+
+            "project_code":
+                project_code,
+
+            "reporting_period":
+                reporting_period,
+
+            "periods":
+                len(rows),
+
+            "progress_trend":
+                [
+                    dict(row)
+                    for row in rows
+                ],
         }
 
 
@@ -788,12 +1339,8 @@ def get_project_progress_trend(
     "/api/projects/{project_code}/schedule-risk"
 )
 def get_project_schedule_risk(
-    project_code: str
+    project_code: str,
 ):
-    """
-    Return schedule activity detail and
-    schedule-risk summary.
-    """
 
     with get_db_connection() as connection:
 
@@ -825,19 +1372,23 @@ def get_project_schedule_risk(
             ),
         ).fetchall()
 
+
         if not activities:
 
             raise HTTPException(
                 status_code=404,
                 detail=(
-                    f"Project {project_code} "
+                    f"Project "
+                    f"{project_code} "
                     "not found"
                 ),
             )
 
+
         summary = connection.execute(
             """
             SELECT
+
                 COUNT(*)
                     AS total_activities,
 
@@ -847,7 +1398,8 @@ def get_project_schedule_risk(
                         THEN 1
                         ELSE 0
                     END
-                ) AS critical_activities,
+                )
+                    AS critical_activities,
 
                 SUM(
                     CASE
@@ -855,23 +1407,28 @@ def get_project_schedule_risk(
                         THEN 1
                         ELSE 0
                     END
-                ) AS delayed_activities,
+                )
+                    AS delayed_activities,
 
                 SUM(
                     CASE
-                        WHEN is_critical = 1
-                        AND delayed_activity_flag = 1
+                        WHEN
+                            is_critical = 1
+                            AND
+                            delayed_activity_flag = 1
                         THEN 1
                         ELSE 0
                     END
-                ) AS critical_delayed_activities,
+                )
+                    AS critical_delayed_activities,
 
                 ROUND(
                     AVG(
                         percent_complete
                     ),
                     2
-                ) AS average_completion_pct
+                )
+                    AS average_completion_pct
 
             FROM fact_schedule
 
@@ -882,19 +1439,22 @@ def get_project_schedule_risk(
             ),
         ).fetchone()
 
+
         return {
-            "project_code": (
-                project_code
-            ),
-            "summary": dict(
-                summary
-            ),
-            "activities": [
+
+            "project_code":
+                project_code,
+
+            "summary":
                 dict(
-                    row
-                )
-                for row in activities
-            ],
+                    summary
+                ),
+
+            "activities":
+                [
+                    dict(row)
+                    for row in activities
+                ],
         }
 
 
@@ -906,12 +1466,8 @@ def get_project_schedule_risk(
     "/api/projects/{project_code}/procurement-risk"
 )
 def get_project_procurement_risk(
-    project_code: str
+    project_code: str,
 ):
-    """
-    Return procurement delivery exposure and
-    supplier-level detail.
-    """
 
     with get_db_connection() as connection:
 
@@ -948,19 +1504,23 @@ def get_project_procurement_risk(
             ),
         ).fetchall()
 
+
         if not items:
 
             raise HTTPException(
                 status_code=404,
                 detail=(
-                    f"Project {project_code} "
+                    f"Project "
+                    f"{project_code} "
                     "not found"
                 ),
             )
 
+
         summary = connection.execute(
             """
             SELECT
+
                 COUNT(*)
                     AS total_items,
 
@@ -970,7 +1530,8 @@ def get_project_procurement_risk(
                         THEN 1
                         ELSE 0
                     END
-                ) AS delayed_items,
+                )
+                    AS delayed_items,
 
                 SUM(
                     CASE
@@ -978,7 +1539,8 @@ def get_project_procurement_risk(
                         THEN 1
                         ELSE 0
                     END
-                ) AS critical_delays,
+                )
+                    AS critical_delays,
 
                 ROUND(
                     AVG(
@@ -988,7 +1550,8 @@ def get_project_procurement_risk(
                         END
                     ),
                     1
-                ) AS avg_delay_days,
+                )
+                    AS avg_delay_days,
 
                 ROUND(
                     SUM(
@@ -999,7 +1562,8 @@ def get_project_procurement_risk(
                         END
                     ),
                     2
-                ) AS delayed_value
+                )
+                    AS delayed_value
 
             FROM fact_procurement
 
@@ -1010,19 +1574,22 @@ def get_project_procurement_risk(
             ),
         ).fetchone()
 
+
         return {
-            "project_code": (
-                project_code
-            ),
-            "summary": dict(
-                summary
-            ),
-            "procurement_items": [
+
+            "project_code":
+                project_code,
+
+            "summary":
                 dict(
-                    row
-                )
-                for row in items
-            ],
+                    summary
+                ),
+
+            "procurement_items":
+                [
+                    dict(row)
+                    for row in items
+                ],
         }
 
 
@@ -1034,32 +1601,21 @@ def get_project_procurement_risk(
     "/api/projects/{project_code}/overview"
 )
 def get_project_overview(
-    project_code: str
+    project_code: str,
+    reporting_period: Optional[str] = None,
 ):
-    """
-    Return the executive overview for a selected project.
-    """
 
     with get_db_connection() as connection:
 
-        project = connection.execute(
+        validate_reporting_period(
+            connection,
+            reporting_period,
+        )
+
+
+        project_row = connection.execute(
             """
-            SELECT
-                project_code,
-                project_name,
-                approved_budget,
-                actual_cost_to_date,
-                forecast_at_completion,
-                forecast_variance,
-                forecast_variance_pct,
-                planned_progress_pct,
-                actual_progress_pct,
-                progress_variance_pct,
-                health_status,
-                management_status,
-                total_procurement_items,
-                delayed_items,
-                critical_delays
+            SELECT *
 
             FROM report_management_scorecard
 
@@ -1070,19 +1626,186 @@ def get_project_overview(
             ),
         ).fetchone()
 
-        if project is None:
+
+        if project_row is None:
 
             raise HTTPException(
                 status_code=404,
                 detail=(
-                    f"Project {project_code} "
+                    f"Project "
+                    f"{project_code} "
                     "not found"
                 ),
             )
 
+
+        project = dict(
+            project_row
+        )
+
+
+        if reporting_period:
+
+            cost = get_period_cost_snapshot(
+                connection,
+                project_code,
+                reporting_period,
+            )
+
+
+            progress = (
+                get_period_progress_snapshot(
+                    connection,
+                    project_code,
+                    reporting_period,
+                )
+            )
+
+
+            if cost is None:
+
+                raise HTTPException(
+                    status_code=404,
+                    detail=(
+                        "No cost data for "
+                        f"{project_code} "
+                        "in "
+                        f"{reporting_period}"
+                    ),
+                )
+
+
+            project[
+                "actual_cost_to_date"
+            ] = round(
+                float(
+                    cost[
+                        "cumulative_actual_cost"
+                    ]
+                    or 0
+                ),
+                2,
+            )
+
+
+            project[
+                "committed_cost_to_date"
+            ] = round(
+                float(
+                    cost[
+                        "cumulative_committed_cost"
+                    ]
+                    or 0
+                ),
+                2,
+            )
+
+
+            project[
+                "forecast_at_completion"
+            ] = round(
+                float(
+                    cost[
+                        "forecast_at_completion"
+                    ]
+                    or 0
+                ),
+                2,
+            )
+
+
+            budget = float(
+                project.get(
+                    "approved_budget"
+                )
+                or 0
+            )
+
+
+            fac = float(
+                project.get(
+                    "forecast_at_completion"
+                )
+                or 0
+            )
+
+
+            forecast_variance = (
+                budget
+                -
+                fac
+            )
+
+
+            project[
+                "forecast_variance"
+            ] = round(
+                forecast_variance,
+                2,
+            )
+
+
+            project[
+                "forecast_variance_pct"
+            ] = round(
+                (
+                    forecast_variance
+                    /
+                    budget
+                    *
+                    100
+                )
+                if budget
+                else 0,
+                2,
+            )
+
+
+            if progress:
+
+                project[
+                    "planned_progress_pct"
+                ] = progress[
+                    "planned_progress_pct"
+                ]
+
+                project[
+                    "actual_progress_pct"
+                ] = progress[
+                    "actual_progress_pct"
+                ]
+
+                project[
+                    "progress_variance_pct"
+                ] = progress[
+                    "progress_variance_pct"
+                ]
+
+
+            credibility = (
+                calculate_forecast_credibility(
+                    project.get(
+                        "actual_cost_to_date"
+                    ),
+                    project.get(
+                        "actual_progress_pct"
+                    ),
+                    project.get(
+                        "forecast_at_completion"
+                    ),
+                )
+            )
+
+
+            project.update(
+                credibility
+            )
+
+
         schedule = connection.execute(
             """
             SELECT
+
                 COUNT(*)
                     AS total_activities,
 
@@ -1092,7 +1815,8 @@ def get_project_overview(
                         THEN 1
                         ELSE 0
                     END
-                ) AS critical_activities,
+                )
+                    AS critical_activities,
 
                 SUM(
                     CASE
@@ -1100,16 +1824,20 @@ def get_project_overview(
                         THEN 1
                         ELSE 0
                     END
-                ) AS delayed_activities,
+                )
+                    AS delayed_activities,
 
                 SUM(
                     CASE
-                        WHEN is_critical = 1
-                        AND delayed_activity_flag = 1
+                        WHEN
+                            is_critical = 1
+                            AND
+                            delayed_activity_flag = 1
                         THEN 1
                         ELSE 0
                     END
-                ) AS critical_delayed_activities
+                )
+                    AS critical_delayed_activities
 
             FROM fact_schedule
 
@@ -1119,6 +1847,7 @@ def get_project_overview(
                 project_code,
             ),
         ).fetchone()
+
 
         cost_quality = connection.execute(
             """
@@ -1128,61 +1857,488 @@ def get_project_overview(
 
             FROM fact_cost
 
-            WHERE project_code = ?
-              AND cost_anomaly_flag = 1
+            WHERE
+                project_code = ?
+                AND cost_anomaly_flag = 1
             """,
             (
                 project_code,
             ),
         ).fetchone()
 
+
         return {
-            "project": dict(
-                project
-            ),
-            "schedule": dict(
-                schedule
-            ),
-            "data_quality": dict(
-                cost_quality
-            ),
+
+            "reporting_period":
+                reporting_period,
+
+            "project":
+                project,
+
+            "schedule":
+                dict(
+                    schedule
+                ),
+
+            "data_quality":
+                dict(
+                    cost_quality
+                ),
         }
 
 
 # ============================================================
-# PROJECT MANAGEMENT INSIGHTS
+# FORECAST CREDIBILITY
+# ============================================================
+
+@app.get(
+    "/api/projects/{project_code}/forecast-credibility"
+)
+def get_project_forecast_credibility(
+    project_code: str,
+    reporting_period: Optional[str] = None,
+):
+
+    with get_db_connection() as connection:
+
+        validate_reporting_period(
+            connection,
+            reporting_period,
+        )
+
+
+        if reporting_period:
+
+            cost = get_period_cost_snapshot(
+                connection,
+                project_code,
+                reporting_period,
+            )
+
+
+            progress = (
+                get_period_progress_snapshot(
+                    connection,
+                    project_code,
+                    reporting_period,
+                )
+            )
+
+
+            if (
+                cost is None
+                or
+                progress is None
+            ):
+
+                raise HTTPException(
+                    status_code=404,
+                    detail=(
+                        "No reporting snapshot "
+                        f"for {project_code} "
+                        f"in {reporting_period}"
+                    ),
+                )
+
+
+            actual_cost = float(
+                cost[
+                    "cumulative_actual_cost"
+                ]
+                or 0
+            )
+
+
+            reported_fac = float(
+                cost[
+                    "forecast_at_completion"
+                ]
+                or 0
+            )
+
+
+            actual_progress = float(
+                progress[
+                    "actual_progress_pct"
+                ]
+                or 0
+            )
+
+
+            effective_period = (
+                reporting_period
+            )
+
+
+        else:
+
+            row = connection.execute(
+                """
+                SELECT *
+
+                FROM report_management_scorecard
+
+                WHERE project_code = ?
+                """,
+                (
+                    project_code,
+                ),
+            ).fetchone()
+
+
+            if row is None:
+
+                raise HTTPException(
+                    status_code=404,
+                    detail=(
+                        f"Project "
+                        f"{project_code} "
+                        "not found"
+                    ),
+                )
+
+
+            row = dict(
+                row
+            )
+
+
+            actual_cost = float(
+                row.get(
+                    "actual_cost_to_date"
+                )
+                or 0
+            )
+
+
+            reported_fac = float(
+                row.get(
+                    "forecast_at_completion"
+                )
+                or 0
+            )
+
+
+            actual_progress = float(
+                row.get(
+                    "actual_progress_pct"
+                )
+                or 0
+            )
+
+
+            latest = (
+                get_latest_reporting_period(
+                    connection,
+                    project_code,
+                )
+            )
+
+
+            effective_period = (
+                latest[
+                    "year_month"
+                ]
+                if latest
+                else None
+            )
+
+
+        credibility = (
+            calculate_forecast_credibility(
+                actual_cost,
+                actual_progress,
+                reported_fac,
+            )
+        )
+
+
+        return {
+
+            "project_code":
+                project_code,
+
+            "reporting_period":
+                effective_period,
+
+            "reported_fac":
+                round(
+                    reported_fac,
+                    2,
+                ),
+
+            "actual_cost_to_date":
+                round(
+                    actual_cost,
+                    2,
+                ),
+
+            "actual_progress_pct":
+                round(
+                    actual_progress,
+                    2,
+                ),
+
+            **credibility,
+
+            "formal_evm":
+                False,
+
+            "replaces_reported_fac":
+                False,
+
+            "methodology":
+                (
+                    "Progress-Implied EAC = "
+                    "Actual Cost to Date / "
+                    "(Actual Progress % / 100). "
+                    "This is a forecast sanity "
+                    "check, not formal Earned "
+                    "Value Management."
+                ),
+        }
+
+
+# ============================================================
+# FAC MOVEMENT
+# ============================================================
+
+@app.get(
+    "/api/projects/{project_code}/fac-movement"
+)
+def get_project_fac_movement(
+    project_code: str,
+    reporting_period: Optional[str] = None,
+):
+
+    with get_db_connection() as connection:
+
+        validate_reporting_period(
+            connection,
+            reporting_period,
+        )
+
+
+        where_period = ""
+
+        parameters = [
+            project_code
+        ]
+
+
+        if reporting_period:
+
+            where_period = (
+                "AND dd.year_month <= ?"
+            )
+
+            parameters.append(
+                reporting_period
+            )
+
+
+        rows = connection.execute(
+            f"""
+            SELECT
+                dd.date,
+                dd.year_month,
+
+                ROUND(
+                    SUM(
+                        fc.forecast_at_completion
+                    ),
+                    2
+                )
+                    AS fac
+
+            FROM fact_cost fc
+
+            JOIN dim_date dd
+                ON fc.date_key
+                = dd.date_key
+
+            WHERE fc.project_code = ?
+
+            {where_period}
+
+            GROUP BY
+                dd.date,
+                dd.year_month
+
+            ORDER BY dd.date
+            """,
+            tuple(
+                parameters
+            ),
+        ).fetchall()
+
+
+        if len(rows) < 2:
+
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "Insufficient FAC history "
+                    f"for {project_code}"
+                ),
+            )
+
+
+        previous = rows[
+            -2
+        ]
+
+        current = rows[
+            -1
+        ]
+
+
+        previous_fac = float(
+            previous[
+                "fac"
+            ]
+            or 0
+        )
+
+
+        current_fac = float(
+            current[
+                "fac"
+            ]
+            or 0
+        )
+
+
+        fac_change = (
+            current_fac
+            -
+            previous_fac
+        )
+
+
+        fac_change_pct = (
+            fac_change
+            /
+            previous_fac
+            *
+            100
+            if previous_fac
+            else 0
+        )
+
+
+        if fac_change > 0.005:
+
+            movement_direction = (
+                "Deteriorated"
+            )
+
+            interpretation = (
+                "Forecast at Completion "
+                "increased versus the "
+                "previous reporting period."
+            )
+
+
+        elif fac_change < -0.005:
+
+            movement_direction = (
+                "Improved"
+            )
+
+            interpretation = (
+                "Forecast at Completion "
+                "decreased versus the "
+                "previous reporting period."
+            )
+
+
+        else:
+
+            movement_direction = (
+                "Stable"
+            )
+
+            interpretation = (
+                "Forecast at Completion is "
+                "broadly unchanged versus "
+                "the previous reporting period."
+            )
+
+
+        return {
+
+            "project_code":
+                project_code,
+
+            "previous_reporting_date":
+                previous[
+                    "date"
+                ],
+
+            "previous_reporting_period":
+                previous[
+                    "year_month"
+                ],
+
+            "current_reporting_date":
+                current[
+                    "date"
+                ],
+
+            "current_reporting_period":
+                current[
+                    "year_month"
+                ],
+
+            "previous_fac":
+                round(
+                    previous_fac,
+                    2,
+                ),
+
+            "current_fac":
+                round(
+                    current_fac,
+                    2,
+                ),
+
+            "fac_change":
+                round(
+                    fac_change,
+                    2,
+                ),
+
+            "fac_change_pct":
+                round(
+                    fac_change_pct,
+                    2,
+                ),
+
+            "movement_direction":
+                movement_direction,
+
+            "interpretation":
+                interpretation,
+        }
+
+
+# ============================================================
+# MANAGEMENT INSIGHTS
 # ============================================================
 
 @app.get(
     "/api/projects/{project_code}/management-insights"
 )
 def get_project_management_insights(
-    project_code: str
+    project_code: str,
 ):
-    """
-    Generate deterministic rules-based management insights
-    from cost, progress, schedule, procurement and
-    data-quality indicators.
-
-    This is exception analytics, not an AI prediction model.
-    """
 
     with get_db_connection() as connection:
 
-        project = connection.execute(
+        project_row = connection.execute(
             """
-            SELECT
-                project_code,
-                project_name,
-                approved_budget,
-                actual_cost_to_date,
-                forecast_at_completion,
-                forecast_variance,
-                forecast_variance_pct,
-                planned_progress_pct,
-                actual_progress_pct,
-                progress_variance_pct,
-                management_status
+            SELECT *
 
             FROM report_management_scorecard
 
@@ -1193,19 +2349,28 @@ def get_project_management_insights(
             ),
         ).fetchone()
 
-        if project is None:
+
+        if project_row is None:
 
             raise HTTPException(
                 status_code=404,
                 detail=(
-                    f"Project {project_code} "
+                    f"Project "
+                    f"{project_code} "
                     "not found"
                 ),
             )
 
+
+        project = dict(
+            project_row
+        )
+
+
         schedule = connection.execute(
             """
             SELECT
+
                 COUNT(*)
                     AS total_activities,
 
@@ -1215,7 +2380,8 @@ def get_project_management_insights(
                         THEN 1
                         ELSE 0
                     END
-                ) AS delayed_activities,
+                )
+                    AS delayed_activities,
 
                 SUM(
                     CASE
@@ -1223,16 +2389,20 @@ def get_project_management_insights(
                         THEN 1
                         ELSE 0
                     END
-                ) AS critical_activities,
+                )
+                    AS critical_activities,
 
                 SUM(
                     CASE
-                        WHEN is_critical = 1
-                        AND delayed_activity_flag = 1
+                        WHEN
+                            is_critical = 1
+                            AND
+                            delayed_activity_flag = 1
                         THEN 1
                         ELSE 0
                     END
-                ) AS critical_delayed_activities
+                )
+                    AS critical_delayed_activities
 
             FROM fact_schedule
 
@@ -1243,9 +2413,11 @@ def get_project_management_insights(
             ),
         ).fetchone()
 
+
         procurement = connection.execute(
             """
             SELECT
+
                 COUNT(*)
                     AS total_items,
 
@@ -1255,7 +2427,8 @@ def get_project_management_insights(
                         THEN 1
                         ELSE 0
                     END
-                ) AS delayed_items,
+                )
+                    AS delayed_items,
 
                 SUM(
                     CASE
@@ -1263,17 +2436,8 @@ def get_project_management_insights(
                         THEN 1
                         ELSE 0
                     END
-                ) AS critical_delays,
-
-                ROUND(
-                    AVG(
-                        CASE
-                            WHEN delayed_delivery_flag = 1
-                            THEN delivery_delay_days
-                        END
-                    ),
-                    1
-                ) AS avg_delay_days
+                )
+                    AS critical_delays
 
             FROM fact_procurement
 
@@ -1284,42 +2448,49 @@ def get_project_management_insights(
             ),
         ).fetchone()
 
+
         quality = connection.execute(
             """
             SELECT
+
                 COUNT(*)
                     AS cost_anomalies
 
             FROM fact_cost
 
-            WHERE project_code = ?
-              AND cost_anomaly_flag = 1
+            WHERE
+                project_code = ?
+                AND cost_anomaly_flag = 1
             """,
             (
                 project_code,
             ),
         ).fetchone()
 
+
         forecast_variance = float(
-            project[
+            project.get(
                 "forecast_variance"
-            ]
+            )
             or 0
         )
+
 
         forecast_variance_pct = float(
-            project[
+            project.get(
                 "forecast_variance_pct"
-            ]
+            )
             or 0
         )
 
+
         progress_variance = float(
-            project[
+            project.get(
                 "progress_variance_pct"
-            ]
+            )
             or 0
         )
+
 
         delayed_activities = int(
             schedule[
@@ -1328,12 +2499,14 @@ def get_project_management_insights(
             or 0
         )
 
+
         critical_activities = int(
             schedule[
                 "critical_activities"
             ]
             or 0
         )
+
 
         critical_delayed = int(
             schedule[
@@ -1342,12 +2515,14 @@ def get_project_management_insights(
             or 0
         )
 
+
         delayed_items = int(
             procurement[
                 "delayed_items"
             ]
             or 0
         )
+
 
         critical_procurement = int(
             procurement[
@@ -1356,12 +2531,14 @@ def get_project_management_insights(
             or 0
         )
 
+
         total_procurement = int(
             procurement[
                 "total_items"
             ]
             or 0
         )
+
 
         cost_anomalies = int(
             quality[
@@ -1370,65 +2547,84 @@ def get_project_management_insights(
             or 0
         )
 
+
         insights = []
+
 
         # ----------------------------------------------------
         # COST
-        # Negative forecast variance = forecast over budget.
         # ----------------------------------------------------
 
         if forecast_variance_pct <= -10:
 
             insights.append(
                 {
-                    "category": "Cost",
-                    "severity": "critical",
-                    "title": (
-                        "Significant forecast overrun"
-                    ),
-                    "message": (
-                        "Forecast at completion is "
-                        f"£{abs(forecast_variance):,.0f} "
-                        "over approved budget "
-                        f"({abs(forecast_variance_pct):.1f}%)."
-                    ),
+                    "category":
+                        "Cost",
+
+                    "severity":
+                        "critical",
+
+                    "title":
+                        "Significant forecast overrun",
+
+                    "message":
+                        (
+                            "Forecast at completion "
+                            f"is £{abs(forecast_variance):,.0f} "
+                            "over approved budget "
+                            f"({abs(forecast_variance_pct):.1f}%)."
+                        ),
                 }
             )
+
 
         elif forecast_variance_pct <= -5:
 
             insights.append(
                 {
-                    "category": "Cost",
-                    "severity": "warning",
-                    "title": (
-                        "Forecast pressure"
-                    ),
-                    "message": (
-                        "Forecast at completion is "
-                        f"£{abs(forecast_variance):,.0f} "
-                        "over approved budget "
-                        f"({abs(forecast_variance_pct):.1f}%)."
-                    ),
+                    "category":
+                        "Cost",
+
+                    "severity":
+                        "warning",
+
+                    "title":
+                        "Forecast pressure",
+
+                    "message":
+                        (
+                            "Forecast at completion "
+                            f"is £{abs(forecast_variance):,.0f} "
+                            "over approved budget "
+                            f"({abs(forecast_variance_pct):.1f}%)."
+                        ),
                 }
             )
+
 
         elif forecast_variance > 0:
 
             insights.append(
                 {
-                    "category": "Cost",
-                    "severity": "positive",
-                    "title": (
-                        "Forecast within budget"
-                    ),
-                    "message": (
-                        "Current forecast is "
-                        f"£{forecast_variance:,.0f} "
-                        "below approved budget."
-                    ),
+                    "category":
+                        "Cost",
+
+                    "severity":
+                        "positive",
+
+                    "title":
+                        "Forecast within budget",
+
+                    "message":
+                        (
+                            "Current forecast is "
+                            f"£{forecast_variance:,.0f} "
+                            "below approved budget."
+                        ),
                 }
             )
+
 
         # ----------------------------------------------------
         # PROGRESS
@@ -1438,52 +2634,73 @@ def get_project_management_insights(
 
             insights.append(
                 {
-                    "category": "Schedule",
-                    "severity": "critical",
-                    "title": (
-                        "Material schedule slippage"
-                    ),
-                    "message": (
-                        "Actual progress is "
-                        f"{abs(progress_variance):.1f} "
-                        "percentage points behind plan."
-                    ),
+                    "category":
+                        "Schedule",
+
+                    "severity":
+                        "critical",
+
+                    "title":
+                        "Material schedule slippage",
+
+                    "message":
+                        (
+                            "Actual progress is "
+                            f"{abs(progress_variance):.1f} "
+                            "percentage points "
+                            "behind plan."
+                        ),
                 }
             )
+
 
         elif progress_variance <= -5:
 
             insights.append(
                 {
-                    "category": "Schedule",
-                    "severity": "warning",
-                    "title": (
-                        "Progress behind plan"
-                    ),
-                    "message": (
-                        "Actual progress is "
-                        f"{abs(progress_variance):.1f} "
-                        "percentage points behind plan."
-                    ),
+                    "category":
+                        "Schedule",
+
+                    "severity":
+                        "warning",
+
+                    "title":
+                        "Progress behind plan",
+
+                    "message":
+                        (
+                            "Actual progress is "
+                            f"{abs(progress_variance):.1f} "
+                            "percentage points "
+                            "behind plan."
+                        ),
                 }
             )
+
 
         elif progress_variance >= 0:
 
             insights.append(
                 {
-                    "category": "Schedule",
-                    "severity": "positive",
-                    "title": (
-                        "Progress on or ahead of plan"
-                    ),
-                    "message": (
-                        "Actual progress is "
-                        f"{progress_variance:.1f} "
-                        "percentage points ahead of plan."
-                    ),
+                    "category":
+                        "Schedule",
+
+                    "severity":
+                        "positive",
+
+                    "title":
+                        "Progress on or ahead of plan",
+
+                    "message":
+                        (
+                            "Actual progress is "
+                            f"{progress_variance:.1f} "
+                            "percentage points "
+                            "ahead of plan."
+                        ),
                 }
             )
+
 
         # ----------------------------------------------------
         # CRITICAL SCHEDULE
@@ -1514,33 +2731,46 @@ def get_project_management_insights(
                     "currently delayed."
                 )
 
+
             insights.append(
                 {
-                    "category": "Schedule",
-                    "severity": "critical",
-                    "title": (
-                        "Critical activities delayed"
-                    ),
-                    "message": message,
+                    "category":
+                        "Schedule",
+
+                    "severity":
+                        "critical",
+
+                    "title":
+                        "Critical activities delayed",
+
+                    "message":
+                        message,
                 }
             )
+
 
         elif delayed_activities > 0:
 
             insights.append(
                 {
-                    "category": "Schedule",
-                    "severity": "warning",
-                    "title": (
-                        "Activity delays detected"
-                    ),
-                    "message": (
-                        f"{delayed_activities} "
-                        "activities are currently "
-                        "delayed."
-                    ),
+                    "category":
+                        "Schedule",
+
+                    "severity":
+                        "warning",
+
+                    "title":
+                        "Activity delays detected",
+
+                    "message":
+                        (
+                            f"{delayed_activities} "
+                            "activities are currently "
+                            "delayed."
+                        ),
                 }
             )
+
 
         # ----------------------------------------------------
         # PROCUREMENT
@@ -1554,41 +2784,54 @@ def get_project_management_insights(
                 else "deliveries"
             )
 
+
             insights.append(
                 {
-                    "category": "Procurement",
-                    "severity": "critical",
-                    "title": (
-                        "Critical procurement delay"
-                    ),
-                    "message": (
-                        f"{delayed_items} of "
-                        f"{total_procurement} "
-                        "procurement items are "
-                        "delayed, including "
-                        f"{critical_procurement} "
-                        f"critical {delivery_word}."
-                    ),
+                    "category":
+                        "Procurement",
+
+                    "severity":
+                        "critical",
+
+                    "title":
+                        "Critical procurement delay",
+
+                    "message":
+                        (
+                            f"{delayed_items} of "
+                            f"{total_procurement} "
+                            "procurement items are "
+                            "delayed, including "
+                            f"{critical_procurement} "
+                            f"critical {delivery_word}."
+                        ),
                 }
             )
+
 
         elif delayed_items > 0:
 
             insights.append(
                 {
-                    "category": "Procurement",
-                    "severity": "warning",
-                    "title": (
-                        "Procurement delays detected"
-                    ),
-                    "message": (
-                        f"{delayed_items} of "
-                        f"{total_procurement} "
-                        "procurement items are "
-                        "currently delayed."
-                    ),
+                    "category":
+                        "Procurement",
+
+                    "severity":
+                        "warning",
+
+                    "title":
+                        "Procurement delays detected",
+
+                    "message":
+                        (
+                            f"{delayed_items} of "
+                            f"{total_procurement} "
+                            "procurement items are "
+                            "currently delayed."
+                        ),
                 }
             )
+
 
         # ----------------------------------------------------
         # DATA QUALITY
@@ -1602,25 +2845,29 @@ def get_project_management_insights(
                 else "anomalies"
             )
 
+
             insights.append(
                 {
-                    "category": "Data Quality",
-                    "severity": "data",
-                    "title": (
-                        "Cost data requires review"
-                    ),
-                    "message": (
-                        f"{cost_anomalies} flagged "
-                        f"cost {anomaly_word} should "
-                        "be reviewed before relying "
-                        "on reported cost performance."
-                    ),
+                    "category":
+                        "Data Quality",
+
+                    "severity":
+                        "data",
+
+                    "title":
+                        "Cost data requires review",
+
+                    "message":
+                        (
+                            f"{cost_anomalies} "
+                            f"flagged cost {anomaly_word} "
+                            "should be reviewed before "
+                            "relying on reported "
+                            "cost performance."
+                        ),
                 }
             )
 
-        # ----------------------------------------------------
-        # OVERALL ATTENTION LEVEL
-        # ----------------------------------------------------
 
         severities = [
             insight[
@@ -1628,6 +2875,7 @@ def get_project_management_insights(
             ]
             for insight in insights
         ]
+
 
         if "critical" in severities:
 
@@ -1653,13 +2901,14 @@ def get_project_management_insights(
                 "Stable"
             )
 
-        # ----------------------------------------------------
-        # EXECUTIVE SUMMARY
-        # ----------------------------------------------------
 
-        project_name = project[
-            "project_name"
-        ]
+        project_name = (
+            project.get(
+                "project_name",
+                project_code,
+            )
+        )
+
 
         if attention_level == "Critical":
 
@@ -1694,30 +2943,33 @@ def get_project_management_insights(
                 "management tolerances."
             )
 
+
         return {
-            "project_code": (
-                project_code
-            ),
-            "project_name": (
-                project_name
-            ),
-            "management_status": (
-                project[
+
+            "project_code":
+                project_code,
+
+            "project_name":
+                project_name,
+
+            "management_status":
+                project.get(
                     "management_status"
-                ]
-            ),
-            "attention_level": (
-                attention_level
-            ),
-            "executive_summary": (
-                executive_summary
-            ),
-            "insight_count": len(
-                insights
-            ),
-            "insights": (
-                insights
-            ),
+                ),
+
+            "attention_level":
+                attention_level,
+
+            "executive_summary":
+                executive_summary,
+
+            "insight_count":
+                len(
+                    insights
+                ),
+
+            "insights":
+                insights,
         }
 
 
@@ -1729,42 +2981,12 @@ def get_project_management_insights(
     "/api/portfolio/attention-ranking"
 )
 def get_portfolio_attention_ranking():
-    """
-    Rank projects using a transparent rules-based
-    management attention score.
-
-    Maximum score = 100.
-
-    The score is a prioritisation index and is not a
-    probability of project failure.
-
-    Weighting:
-        Cost                30
-        Progress            25
-        Critical schedule   25
-        Procurement         15
-        Data quality         5
-
-    Deadbands:
-        Cost overrun below 1% = no cost points
-        Progress lag below 1 pp = no progress points
-    """
 
     with get_db_connection() as connection:
 
-        projects = connection.execute(
+        project_rows = connection.execute(
             """
-            SELECT
-                project_code,
-                project_name,
-                approved_budget,
-                forecast_at_completion,
-                forecast_variance,
-                forecast_variance_pct,
-                planned_progress_pct,
-                actual_progress_pct,
-                progress_variance_pct,
-                management_status
+            SELECT *
 
             FROM report_management_scorecard
 
@@ -1772,17 +2994,28 @@ def get_portfolio_attention_ranking():
             """
         ).fetchall()
 
+
         ranking = []
 
-        for project in projects:
 
-            project_code = project[
-                "project_code"
-            ]
+        for project_row in project_rows:
+
+            project = dict(
+                project_row
+            )
+
+
+            project_code = (
+                project[
+                    "project_code"
+                ]
+            )
+
 
             schedule = connection.execute(
                 """
                 SELECT
+
                     COUNT(*)
                         AS total_activities,
 
@@ -1792,7 +3025,8 @@ def get_portfolio_attention_ranking():
                             THEN 1
                             ELSE 0
                         END
-                    ) AS delayed_activities,
+                    )
+                        AS delayed_activities,
 
                     SUM(
                         CASE
@@ -1800,16 +3034,20 @@ def get_portfolio_attention_ranking():
                             THEN 1
                             ELSE 0
                         END
-                    ) AS critical_activities,
+                    )
+                        AS critical_activities,
 
                     SUM(
                         CASE
-                            WHEN is_critical = 1
-                            AND delayed_activity_flag = 1
+                            WHEN
+                                is_critical = 1
+                                AND
+                                delayed_activity_flag = 1
                             THEN 1
                             ELSE 0
                         END
-                    ) AS critical_delayed_activities
+                    )
+                        AS critical_delayed_activities
 
                 FROM fact_schedule
 
@@ -1820,9 +3058,11 @@ def get_portfolio_attention_ranking():
                 ),
             ).fetchone()
 
+
             procurement = connection.execute(
                 """
                 SELECT
+
                     COUNT(*)
                         AS total_items,
 
@@ -1832,7 +3072,8 @@ def get_portfolio_attention_ranking():
                             THEN 1
                             ELSE 0
                         END
-                    ) AS delayed_items,
+                    )
+                        AS delayed_items,
 
                     SUM(
                         CASE
@@ -1840,7 +3081,8 @@ def get_portfolio_attention_ranking():
                             THEN 1
                             ELSE 0
                         END
-                    ) AS critical_delays
+                    )
+                        AS critical_delays
 
                 FROM fact_procurement
 
@@ -1851,35 +3093,41 @@ def get_portfolio_attention_ranking():
                 ),
             ).fetchone()
 
+
             quality = connection.execute(
                 """
                 SELECT
+
                     COUNT(*)
                         AS cost_anomalies
 
                 FROM fact_cost
 
-                WHERE project_code = ?
-                  AND cost_anomaly_flag = 1
+                WHERE
+                    project_code = ?
+                    AND cost_anomaly_flag = 1
                 """,
                 (
                     project_code,
                 ),
             ).fetchone()
 
+
             forecast_variance_pct = float(
-                project[
+                project.get(
                     "forecast_variance_pct"
-                ]
+                )
                 or 0
             )
 
+
             progress_variance_pct = float(
-                project[
+                project.get(
                     "progress_variance_pct"
-                ]
+                )
                 or 0
             )
+
 
             delayed_activities = int(
                 schedule[
@@ -1888,12 +3136,14 @@ def get_portfolio_attention_ranking():
                 or 0
             )
 
+
             critical_activities = int(
                 schedule[
                     "critical_activities"
                 ]
                 or 0
             )
+
 
             critical_delayed = int(
                 schedule[
@@ -1902,12 +3152,14 @@ def get_portfolio_attention_ranking():
                 or 0
             )
 
+
             total_procurement = int(
                 procurement[
                     "total_items"
                 ]
                 or 0
             )
+
 
             delayed_procurement = int(
                 procurement[
@@ -1916,12 +3168,14 @@ def get_portfolio_attention_ranking():
                 or 0
             )
 
+
             critical_procurement = int(
                 procurement[
                     "critical_delays"
                 ]
                 or 0
             )
+
 
             cost_anomalies = int(
                 quality[
@@ -1930,9 +3184,6 @@ def get_portfolio_attention_ranking():
                 or 0
             )
 
-            # ------------------------------------------------
-            # SCORE BREAKDOWN
-            # ------------------------------------------------
 
             score_breakdown = {
                 "cost": 0,
@@ -1942,15 +3193,17 @@ def get_portfolio_attention_ranking():
                 "data_quality": 0,
             }
 
-            # ------------------------------------------------
-            # COST — MAX 30
-            # 1% deadband prevents immaterial rounding noise.
-            # ------------------------------------------------
+
+            # -----------------------------------------------
+            # COST
+            # -----------------------------------------------
 
             cost_overrun_pct = max(
                 0,
-                -forecast_variance_pct,
+                -
+                forecast_variance_pct,
             )
+
 
             if cost_overrun_pct >= 10:
 
@@ -1970,15 +3223,17 @@ def get_portfolio_attention_ranking():
                     "cost"
                 ] = 10
 
-            # ------------------------------------------------
-            # PROGRESS — MAX 25
-            # 1 pp deadband prevents immaterial schedule noise.
-            # ------------------------------------------------
+
+            # -----------------------------------------------
+            # PROGRESS
+            # -----------------------------------------------
 
             progress_lag = max(
                 0,
-                -progress_variance_pct,
+                -
+                progress_variance_pct,
             )
+
 
             if progress_lag >= 10:
 
@@ -1998,9 +3253,10 @@ def get_portfolio_attention_ranking():
                     "progress"
                 ] = 5
 
-            # ------------------------------------------------
-            # CRITICAL SCHEDULE — MAX 25
-            # ------------------------------------------------
+
+            # -----------------------------------------------
+            # CRITICAL SCHEDULE
+            # -----------------------------------------------
 
             if critical_activities > 0:
 
@@ -2014,6 +3270,7 @@ def get_portfolio_attention_ranking():
 
                 critical_delay_ratio = 0
 
+
             if critical_delay_ratio >= 0.50:
 
                 score_breakdown[
@@ -2026,9 +3283,10 @@ def get_portfolio_attention_ranking():
                     "critical_schedule"
                 ] = 15
 
-            # ------------------------------------------------
-            # PROCUREMENT — MAX 15
-            # ------------------------------------------------
+
+            # -----------------------------------------------
+            # PROCUREMENT
+            # -----------------------------------------------
 
             if total_procurement > 0:
 
@@ -2041,6 +3299,7 @@ def get_portfolio_attention_ranking():
             else:
 
                 procurement_delay_ratio = 0
+
 
             if critical_procurement > 0:
 
@@ -2060,9 +3319,10 @@ def get_portfolio_attention_ranking():
                     "procurement"
                 ] = 5
 
-            # ------------------------------------------------
-            # DATA QUALITY — MAX 5
-            # ------------------------------------------------
+
+            # -----------------------------------------------
+            # DATA QUALITY
+            # -----------------------------------------------
 
             if cost_anomalies > 0:
 
@@ -2070,35 +3330,31 @@ def get_portfolio_attention_ranking():
                     "data_quality"
                 ] = 5
 
+
             attention_score = sum(
                 score_breakdown.values()
             )
 
-            # ------------------------------------------------
-            # COMPONENT DETAIL
-            # ------------------------------------------------
 
             score_components = {
+
                 key: {
-                    "score": (
+
+                    "score":
                         score_breakdown[
                             key
-                        ]
-                    ),
-                    "maximum": (
+                        ],
+
+                    "maximum":
                         ATTENTION_SCORE_LIMITS[
                             key
-                        ]
-                    ),
+                        ],
                 }
-                for key in (
-                    ATTENTION_SCORE_LIMITS
-                )
+
+                for key
+                in ATTENTION_SCORE_LIMITS
             }
 
-            # ------------------------------------------------
-            # ATTENTION LEVEL
-            # ------------------------------------------------
 
             if (
                 attention_score
@@ -2112,6 +3368,7 @@ def get_portfolio_attention_ranking():
                     "Critical"
                 )
 
+
             elif (
                 attention_score
                 >=
@@ -2124,11 +3381,13 @@ def get_portfolio_attention_ranking():
                     "Watch"
                 )
 
+
             elif cost_anomalies > 0:
 
                 attention_level = (
                     "Review"
                 )
+
 
             else:
 
@@ -2136,32 +3395,31 @@ def get_portfolio_attention_ranking():
                     "Stable"
                 )
 
-            # ------------------------------------------------
-            # PRIMARY DRIVER
-            # ------------------------------------------------
 
             driver_labels = {
-                "cost": (
-                    "Cost"
-                ),
-                "progress": (
-                    "Progress"
-                ),
-                "critical_schedule": (
-                    "Critical Schedule"
-                ),
-                "procurement": (
-                    "Procurement"
-                ),
-                "data_quality": (
-                    "Data Quality"
-                ),
+
+                "cost":
+                    "Cost",
+
+                "progress":
+                    "Progress",
+
+                "critical_schedule":
+                    "Critical Schedule",
+
+                "procurement":
+                    "Procurement",
+
+                "data_quality":
+                    "Data Quality",
             }
+
 
             primary_driver_key = max(
                 score_breakdown,
                 key=score_breakdown.get,
             )
+
 
             if attention_score == 0:
 
@@ -2177,81 +3435,79 @@ def get_portfolio_attention_ranking():
                     ]
                 )
 
+
             ranking.append(
                 {
-                    "project_code": (
-                        project_code
-                    ),
-                    "project_name": (
-                        project[
+
+                    "project_code":
+                        project_code,
+
+                    "project_name":
+                        project.get(
                             "project_name"
-                        ]
-                    ),
-                    "management_status": (
-                        project[
+                        ),
+
+                    "management_status":
+                        project.get(
                             "management_status"
-                        ]
-                    ),
-                    "attention_score": (
-                        attention_score
-                    ),
-                    "attention_score_maximum": (
-                        ATTENTION_SCORE_MAXIMUM
-                    ),
-                    "attention_level": (
-                        attention_level
-                    ),
-                    "primary_driver": (
-                        primary_driver
-                    ),
-                    "forecast_variance_pct": (
+                        ),
+
+                    "attention_score":
+                        attention_score,
+
+                    "attention_score_maximum":
+                        ATTENTION_SCORE_MAXIMUM,
+
+                    "attention_level":
+                        attention_level,
+
+                    "primary_driver":
+                        primary_driver,
+
+                    "forecast_variance_pct":
                         round(
                             forecast_variance_pct,
                             2,
-                        )
-                    ),
-                    "progress_variance_pct": (
+                        ),
+
+                    "progress_variance_pct":
                         round(
                             progress_variance_pct,
                             2,
-                        )
-                    ),
-                    "delayed_activities": (
-                        delayed_activities
-                    ),
-                    "critical_delayed_activities": (
-                        critical_delayed
-                    ),
-                    "delayed_procurement": (
-                        delayed_procurement
-                    ),
-                    "critical_procurement_delays": (
-                        critical_procurement
-                    ),
-                    "cost_anomalies": (
-                        cost_anomalies
-                    ),
-                    "score_breakdown": (
-                        score_breakdown
-                    ),
-                    "score_components": (
-                        score_components
-                    ),
+                        ),
+
+                    "delayed_activities":
+                        delayed_activities,
+
+                    "critical_delayed_activities":
+                        critical_delayed,
+
+                    "delayed_procurement":
+                        delayed_procurement,
+
+                    "critical_procurement_delays":
+                        critical_procurement,
+
+                    "cost_anomalies":
+                        cost_anomalies,
+
+                    "score_breakdown":
+                        score_breakdown,
+
+                    "score_components":
+                        score_components,
                 }
             )
 
-        # ----------------------------------------------------
-        # SORT + RANK
-        # ----------------------------------------------------
 
         ranking.sort(
-            key=lambda item: (
+            key=lambda item:
                 item[
                     "attention_score"
-                ]
-            ),
+                ],
             reverse=True,
         )
+
 
         for index, project in enumerate(
             ranking,
@@ -2262,248 +3518,108 @@ def get_portfolio_attention_ranking():
                 "rank"
             ] = index
 
-        # ----------------------------------------------------
-        # PORTFOLIO SUMMARY
-        # ----------------------------------------------------
 
         summary = {
-            "total_projects": len(
-                ranking
-            ),
-            "critical_projects": sum(
-                1
-                for project in ranking
-                if project[
-                    "attention_level"
-                ]
-                ==
-                "Critical"
-            ),
-            "watch_projects": sum(
-                1
-                for project in ranking
-                if project[
-                    "attention_level"
-                ]
-                ==
-                "Watch"
-            ),
-            "review_projects": sum(
-                1
-                for project in ranking
-                if project[
-                    "attention_level"
-                ]
-                ==
-                "Review"
-            ),
-            "stable_projects": sum(
-                1
-                for project in ranking
-                if project[
-                    "attention_level"
-                ]
-                ==
-                "Stable"
-            ),
+
+            "total_projects":
+                len(
+                    ranking
+                ),
+
+            "critical_projects":
+                sum(
+                    1
+                    for project in ranking
+                    if project[
+                        "attention_level"
+                    ]
+                    ==
+                    "Critical"
+                ),
+
+            "watch_projects":
+                sum(
+                    1
+                    for project in ranking
+                    if project[
+                        "attention_level"
+                    ]
+                    ==
+                    "Watch"
+                ),
+
+            "review_projects":
+                sum(
+                    1
+                    for project in ranking
+                    if project[
+                        "attention_level"
+                    ]
+                    ==
+                    "Review"
+                ),
+
+            "stable_projects":
+                sum(
+                    1
+                    for project in ranking
+                    if project[
+                        "attention_level"
+                    ]
+                    ==
+                    "Stable"
+                ),
         }
 
-        # ----------------------------------------------------
-        # METHODOLOGY
-        # ----------------------------------------------------
 
         methodology = {
-            "name": (
-                "Management Attention Index"
-            ),
-            "description": (
-                ATTENTION_SCORE_DESCRIPTION
-            ),
-            "maximum_score": (
-                ATTENTION_SCORE_MAXIMUM
-            ),
-            "component_limits": (
-                ATTENTION_SCORE_LIMITS
-            ),
+
+            "name":
+                "Management Attention Index",
+
+            "description":
+                ATTENTION_SCORE_DESCRIPTION,
+
+            "maximum_score":
+                ATTENTION_SCORE_MAXIMUM,
+
+            "component_limits":
+                ATTENTION_SCORE_LIMITS,
+
             "attention_thresholds": {
-                "critical": (
-                    "60–100"
-                ),
-                "watch": (
-                    "30–59"
-                ),
-                "review": (
-                    "Below 30 with a "
-                    "data-quality anomaly"
-                ),
-                "stable": (
-                    "Below 30 with no "
-                    "data-quality anomaly"
-                ),
-            },
-            "component_rules": {
-                "cost": {
-                    "maximum": 30,
-                    "rules": [
-                        {
-                            "condition": (
-                                "Forecast overrun "
-                                ">= 10%"
-                            ),
-                            "score": 30,
-                        },
-                        {
-                            "condition": (
-                                "Forecast overrun "
-                                ">= 5% and < 10%"
-                            ),
-                            "score": 20,
-                        },
-                        {
-                            "condition": (
-                                "Forecast overrun "
-                                ">= 1% and < 5%"
-                            ),
-                            "score": 10,
-                        },
-                        {
-                            "condition": (
-                                "Forecast overrun "
-                                "< 1%"
-                            ),
-                            "score": 0,
-                        },
-                    ],
-                },
-                "progress": {
-                    "maximum": 25,
-                    "rules": [
-                        {
-                            "condition": (
-                                "Progress lag "
-                                ">= 10 pp"
-                            ),
-                            "score": 25,
-                        },
-                        {
-                            "condition": (
-                                "Progress lag "
-                                ">= 5 pp and < 10 pp"
-                            ),
-                            "score": 15,
-                        },
-                        {
-                            "condition": (
-                                "Progress lag "
-                                ">= 1 pp and < 5 pp"
-                            ),
-                            "score": 5,
-                        },
-                        {
-                            "condition": (
-                                "Progress lag "
-                                "< 1 pp"
-                            ),
-                            "score": 0,
-                        },
-                    ],
-                },
-                "critical_schedule": {
-                    "maximum": 25,
-                    "rules": [
-                        {
-                            "condition": (
-                                "At least 50% of "
-                                "critical activities "
-                                "are delayed"
-                            ),
-                            "score": 25,
-                        },
-                        {
-                            "condition": (
-                                "One or more critical "
-                                "activities are delayed"
-                            ),
-                            "score": 15,
-                        },
-                        {
-                            "condition": (
-                                "No critical activity "
-                                "delay"
-                            ),
-                            "score": 0,
-                        },
-                    ],
-                },
-                "procurement": {
-                    "maximum": 15,
-                    "rules": [
-                        {
-                            "condition": (
-                                "One or more critical "
-                                "procurement delays"
-                            ),
-                            "score": 15,
-                        },
-                        {
-                            "condition": (
-                                "At least 75% of "
-                                "procurement items "
-                                "are delayed"
-                            ),
-                            "score": 10,
-                        },
-                        {
-                            "condition": (
-                                "At least 25% and "
-                                "less than 75% of "
-                                "procurement items "
-                                "are delayed"
-                            ),
-                            "score": 5,
-                        },
-                        {
-                            "condition": (
-                                "Less than 25% delayed "
-                                "with no critical delay"
-                            ),
-                            "score": 0,
-                        },
-                    ],
-                },
-                "data_quality": {
-                    "maximum": 5,
-                    "rules": [
-                        {
-                            "condition": (
-                                "One or more retained "
-                                "cost anomalies"
-                            ),
-                            "score": 5,
-                        },
-                        {
-                            "condition": (
-                                "No retained cost "
-                                "anomaly"
-                            ),
-                            "score": 0,
-                        },
-                    ],
-                },
+
+                "critical":
+                    "60–100",
+
+                "watch":
+                    "30–59",
+
+                "review":
+                    (
+                        "Below 30 with a "
+                        "data-quality anomaly"
+                    ),
+
+                "stable":
+                    (
+                        "Below 30 with no "
+                        "data-quality anomaly"
+                    ),
             },
         }
 
+
         return {
-            "methodology": (
-                ATTENTION_SCORE_DESCRIPTION
-            ),
-            "scoring_methodology": (
-                methodology
-            ),
-            "summary": (
-                summary
-            ),
-            "projects": (
-                ranking
-            ),
+
+            "methodology":
+                ATTENTION_SCORE_DESCRIPTION,
+
+            "scoring_methodology":
+                methodology,
+
+            "summary":
+                summary,
+
+            "projects":
+                ranking,
         }

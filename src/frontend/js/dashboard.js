@@ -254,6 +254,37 @@ async function fetchJson(url) {
    NAVIGATION
    ============================================================ */
 
+
+/*
+ * Original ControlSight was designed as one long scrolling page.
+ *
+ * This navigation controller converts the existing sections into
+ * proper application views while preserving the existing project
+ * selection and project-control behaviour.
+ */
+
+
+const PROJECT_SUB_TARGETS =
+    new Set([
+        "#cost-performance",
+        "#schedule-risk-panel",
+        "#procurement-risk-panel"
+    ]);
+
+
+const CORE_VIEW_TARGETS =
+    new Set([
+        "#portfolio-overview",
+        "#project-portfolio",
+        "#project-detail",
+        "#data-quality"
+    ]);
+
+
+/* ------------------------------------------------------------
+   ACTIVE SIDEBAR ITEM
+   ------------------------------------------------------------ */
+
 function setActiveNavigation(
     targetHash
 ) {
@@ -264,15 +295,140 @@ function setActiveNavigation(
         )
         .forEach(item => {
 
+            const href =
+                item.getAttribute(
+                    "href"
+                );
+
+
+            /*
+             * Cost / schedule / procurement live inside
+             * Project Detail, but their own sidebar item
+             * should still become active.
+             */
+
             item.classList.toggle(
                 "active",
-                item.getAttribute("href") ===
-                    targetHash
+                href === targetHash
             );
 
         });
 }
 
+
+/* ------------------------------------------------------------
+   DISCOVER PRIMARY APPLICATION VIEWS
+   ------------------------------------------------------------ */
+
+function getPrimaryViewHashes() {
+
+    const hashes =
+        new Set(
+            CORE_VIEW_TARGETS
+        );
+
+
+    document
+        .querySelectorAll(
+            '.sidebar-nav .nav-item[href^="#"]'
+        )
+        .forEach(item => {
+
+            const href =
+                item.getAttribute(
+                    "href"
+                );
+
+
+            if (
+                !href
+                ||
+                href === "#"
+                ||
+                PROJECT_SUB_TARGETS.has(
+                    href
+                )
+            ) {
+                return;
+            }
+
+
+            const target =
+                document.querySelector(
+                    href
+                );
+
+
+            if (target) {
+
+                hashes.add(
+                    href
+                );
+            }
+
+        });
+
+
+    return hashes;
+}
+
+
+/* ------------------------------------------------------------
+   SHOW ONE PRIMARY VIEW
+   ------------------------------------------------------------ */
+
+function showPrimaryView(
+    targetHash
+) {
+
+    const primaryViews =
+        getPrimaryViewHashes();
+
+
+    primaryViews.forEach(
+        hash => {
+
+            const element =
+                document.querySelector(
+                    hash
+                );
+
+
+            if (!element) {
+                return;
+            }
+
+
+            const shouldShow =
+                hash === targetHash;
+
+
+            element.classList.toggle(
+                "hidden",
+                !shouldShow
+            );
+
+
+            element.style.display =
+                shouldShow
+                    ? ""
+                    : "none";
+
+
+            element.setAttribute(
+                "aria-hidden",
+                shouldShow
+                    ? "false"
+                    : "true"
+            );
+
+        });
+}
+
+
+/* ------------------------------------------------------------
+   PROJECT SELECTION MESSAGE
+   ------------------------------------------------------------ */
 
 function showProjectSelectionPrompt() {
 
@@ -280,6 +436,7 @@ function showProjectSelectionPrompt() {
         document.getElementById(
             "project-selection-prompt"
         );
+
 
     if (existing) {
         existing.remove();
@@ -291,16 +448,21 @@ function showProjectSelectionPrompt() {
             "project-portfolio"
         );
 
+
     if (!portfolio) {
         return;
     }
 
 
     const prompt =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
+
 
     prompt.id =
         "project-selection-prompt";
+
 
     prompt.className =
         "project-selection-prompt";
@@ -338,10 +500,13 @@ function showProjectSelectionPrompt() {
 
 
     prompt
-        .querySelector("button")
+        .querySelector(
+            "button"
+        )
         ?.addEventListener(
             "click",
-            () => prompt.remove()
+            () =>
+                prompt.remove()
         );
 
 
@@ -353,6 +518,7 @@ function showProjectSelectionPrompt() {
                     prompt
                 )
             ) {
+
                 prompt.remove();
             }
 
@@ -362,89 +528,375 @@ function showProjectSelectionPrompt() {
 }
 
 
-function initialiseNavigation() {
+/* ------------------------------------------------------------
+   PROJECT SUB-VIEWS
+   ------------------------------------------------------------ */
 
-    const projectOnlyTargets =
-        new Set([
-            "#project-detail",
-            "#cost-performance",
-            "#schedule-risk-panel",
-            "#procurement-risk-panel"
-        ]);
+function showProjectControlView(
+    targetHash
+) {
+
+    showPrimaryView(
+        "#project-detail"
+    );
 
 
-    document
-        .querySelectorAll(
-            ".sidebar-nav .nav-item"
+    /*
+     * Project detail content is rendered dynamically.
+     * Give the browser one frame before scrolling.
+     */
+
+    window.requestAnimationFrame(
+        () => {
+
+            const target =
+                document.querySelector(
+                    targetHash
+                );
+
+
+            target
+                ?.scrollIntoView({
+                    behavior:
+                        "smooth",
+
+                    block:
+                        "start"
+                });
+
+        }
+    );
+}
+
+
+/* ------------------------------------------------------------
+   NAVIGATE
+   ------------------------------------------------------------ */
+
+function navigateToHash(
+    targetHash,
+    options = {}
+) {
+
+    const {
+        updateHash = true,
+        scroll = true
+    } = options;
+
+
+    if (
+        !targetHash
+        ||
+        targetHash === "#"
+    ) {
+
+        targetHash =
+            "#portfolio-overview";
+    }
+
+
+    /*
+     * Project-only controls require a selected project.
+     */
+
+    if (
+        (
+            targetHash ===
+                "#project-detail"
+            ||
+            PROJECT_SUB_TARGETS.has(
+                targetHash
+            )
         )
-        .forEach(item => {
+        &&
+        !selectedProjectCode
+    ) {
 
-            item.addEventListener(
-                "click",
-                event => {
-
-                    const href =
-                        item.getAttribute(
-                            "href"
-                        );
+        showPrimaryView(
+            "#project-portfolio"
+        );
 
 
-                    if (
-                        projectOnlyTargets.has(
-                            href
-                        ) &&
-                        !selectedProjectCode
-                    ) {
-
-                        event.preventDefault();
-
-                        setActiveNavigation(
-                            "#project-portfolio"
-                        );
-
-                        document
-                            .getElementById(
-                                "project-portfolio"
-                            )
-                            ?.scrollIntoView({
-                                behavior:
-                                    "smooth",
-                                block:
-                                    "start"
-                            });
-
-                        showProjectSelectionPrompt();
-
-                        return;
-                    }
+        setActiveNavigation(
+            "#project-portfolio"
+        );
 
 
-                    setActiveNavigation(
-                        href
-                    );
+        if (updateHash) {
 
-                }
+            history.replaceState(
+                null,
+                "",
+                "#project-portfolio"
             );
+        }
 
-        });
+
+        showProjectSelectionPrompt();
 
 
-    const safeHashes =
-        new Set([
-            "#portfolio-overview",
-            "#project-portfolio",
-            "#data-quality"
-        ]);
+        if (scroll) {
+
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+        }
+
+
+        return;
+    }
+
+
+    /*
+     * Cost / Schedule / Procurement panels live inside
+     * Project Detail rather than being separate top-level
+     * sections.
+     */
+
+    if (
+        PROJECT_SUB_TARGETS.has(
+            targetHash
+        )
+    ) {
+
+        showProjectControlView(
+            targetHash
+        );
+
+
+        setActiveNavigation(
+            targetHash
+        );
+
+
+        if (updateHash) {
+
+            history.replaceState(
+                null,
+                "",
+                targetHash
+            );
+        }
+
+
+        return;
+    }
+
+
+    /*
+     * Standard top-level application page.
+     */
+
+    const target =
+        document.querySelector(
+            targetHash
+        );
+
+
+    if (!target) {
+
+        console.warn(
+            "Navigation target not found:",
+            targetHash
+        );
+
+
+        return;
+    }
+
+
+    showPrimaryView(
+        targetHash
+    );
 
 
     setActiveNavigation(
-        safeHashes.has(
-            window.location.hash
+        targetHash
+    );
+
+
+    if (updateHash) {
+
+        history.replaceState(
+            null,
+            "",
+            targetHash
+        );
+    }
+
+
+    if (scroll) {
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+    }
+}
+
+
+/* ------------------------------------------------------------
+   INITIALISE NAVIGATION
+   ------------------------------------------------------------ */
+
+function initialiseNavigation() {
+
+    const nav =
+        document.querySelector(
+            ".sidebar-nav"
+        );
+
+
+    if (!nav) {
+
+        console.warn(
+            "ControlSight navigation not found."
+        );
+
+        return;
+    }
+
+
+    /*
+     * Event delegation is intentional.
+     *
+     * Additional ControlSight modules add sidebar links
+     * dynamically after dashboard.js has loaded.
+     */
+
+    nav.addEventListener(
+        "click",
+        event => {
+
+            const item =
+                event.target.closest(
+                    ".nav-item"
+                );
+
+
+            if (!item) {
+                return;
+            }
+
+
+            const href =
+                item.getAttribute(
+                    "href"
+                );
+
+
+            if (
+                !href
+                ||
+                href === "#"
+            ) {
+                return;
+            }
+
+
+            /*
+             * Only take over navigation when the requested
+             * element actually exists or is one of the known
+             * dynamically rendered project-control panels.
+             */
+
+            if (
+                !document.querySelector(
+                    href
+                )
+                &&
+                !PROJECT_SUB_TARGETS.has(
+                    href
+                )
+            ) {
+
+                return;
+            }
+
+
+            event.preventDefault();
+
+
+            navigateToHash(
+                href,
+                {
+                    updateHash:
+                        true,
+
+                    scroll:
+                        true
+                }
+            );
+
+        }
+    );
+
+
+    /*
+     * Browser Back / Forward support.
+     */
+
+    window.addEventListener(
+        "hashchange",
+        () => {
+
+            const hash =
+                window.location.hash
+                ||
+                "#portfolio-overview";
+
+
+            navigateToHash(
+                hash,
+                {
+                    updateHash:
+                        false,
+
+                    scroll:
+                        false
+                }
+            );
+
+        }
+    );
+
+
+    /*
+     * Initial page.
+     */
+
+    const initialHash =
+        window.location.hash
+        ||
+        "#portfolio-overview";
+
+
+    const initialExists =
+        document.querySelector(
+            initialHash
         )
-            ? window.location.hash
-            : "#portfolio-overview"
+        ||
+        PROJECT_SUB_TARGETS.has(
+            initialHash
+        );
+
+
+    navigateToHash(
+        initialExists
+            ? initialHash
+            : "#portfolio-overview",
+        {
+            updateHash:
+                !initialExists,
+
+            scroll:
+                false
+        }
     );
 }
+
+
 
 
 /* ============================================================

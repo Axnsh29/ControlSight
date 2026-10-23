@@ -16,3 +16,6 @@ Thumbs.db
 *.sqlite3
 
 *.log
+# ControlSight runtime generated files
+data/uploads/
+data/report_packs/

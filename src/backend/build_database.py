@@ -19,6 +19,23 @@ DEFAULT_OUTPUT = DATABASE_DIR / "controlsight_rebuilt.db"
 
 
 # ======================================================================
+# FORECAST CREDIBILITY SETTINGS
+# ======================================================================
+
+FORECAST_CREDIBILITY_THRESHOLDS = {
+    "watch": 5.0,
+    "high": 10.0,
+    "critical": 20.0,
+}
+
+FORECAST_CREDIBILITY_DESCRIPTION = (
+    "Progress-Implied EAC is a forecast sanity check calculated as "
+    "Actual Cost to Date divided by Actual Progress fraction. "
+    "It is not a replacement for formal Earned Value Management."
+)
+
+
+# ======================================================================
 # EXPECTED PORTFOLIO OUTPUT
 # Used as a regression check against the validated ControlSight model.
 # ======================================================================
@@ -102,41 +119,33 @@ EXPECTED_PROJECTS = {
 
 def load_csv(filename: str) -> pd.DataFrame:
     path = PROCESSED_DIR / filename
-
     if not path.exists():
         raise FileNotFoundError(
             f"Required processed dataset not found: {path}"
         )
-
     return pd.read_csv(path)
 
 
 def normalise_date(series: pd.Series) -> pd.Series:
     return pd.to_datetime(
         series,
-        errors="coerce"
+        errors="coerce",
     ).dt.normalize()
 
 
 def date_key(series: pd.Series) -> pd.Series:
     parsed = normalise_date(series)
-
     keys = parsed.dt.strftime("%Y%m%d")
-
     return pd.to_numeric(
         keys,
-        errors="coerce"
+        errors="coerce",
     ).astype("Int64")
 
 
 def as_sql_nullable(series: pd.Series) -> pd.Series:
-    """
-    Convert pandas nullable values into Python None values so SQLite
-    receives proper SQL NULLs.
-    """
     return series.astype(object).where(
         pd.notna(series),
-        None
+        None,
     )
 
 
@@ -149,9 +158,8 @@ def round_numeric(
         if column in dataframe.columns:
             dataframe[column] = pd.to_numeric(
                 dataframe[column],
-                errors="coerce"
+                errors="coerce",
             ).round(decimals)
-
     return dataframe
 
 
@@ -186,20 +194,16 @@ def normalise_cost_model(
 
     Controls
     --------
-    1. Total planned cost cannot exceed the approved package baseline.
+    1. Total planned cost cannot exceed approved package baseline.
 
-    2. Total project planned cost cannot exceed the approved project
-       budget.
+    2. Total project planned cost cannot exceed approved project budget.
 
-    3. Source Forecast at Completion (FAC) remains the primary forecast,
-       but it cannot fall below cumulative actual or cumulative committed
-       cost at any reporting snapshot.
+    3. Source FAC remains the primary forecast, but cannot fall below
+       cumulative actual or cumulative committed cost at a reporting
+       snapshot.
 
-       minimum project FAC =
-           max(cumulative actual, cumulative committed)
-
-    4. Dependent cost and forecast variance fields are recalculated after
-       normalisation.
+    4. Forecast credibility is NOT used to overwrite FAC. It is added
+       later as a separate analytical cross-check.
 
     Important
     ---------
@@ -207,7 +211,7 @@ def normalise_cost_model(
     - Committed cost is never modified.
     - Existing valid FAC values are preserved.
     - The deliberate retained cost anomaly is preserved.
-    - Progress is not used to manufacture a forecast.
+    - Progress is not used to manufacture or replace the source FAC.
     """
 
     repaired = {
@@ -247,21 +251,12 @@ def normalise_cost_model(
 
     package_totals = (
         cost.groupby(
-            [
-                "project_code",
-                "package_code",
-            ],
+            ["project_code", "package_code"],
             as_index=False,
         )
         .agg(
-            planned_total=(
-                "planned_cost",
-                "sum",
-            ),
-            package_budget=(
-                "package_budget",
-                "max",
-            ),
+            planned_total=("planned_cost", "sum"),
+            package_budget=("package_budget", "max"),
         )
     )
 
@@ -296,10 +291,7 @@ def normalise_cost_model(
                 "baseline_factor",
             ]
         ],
-        on=[
-            "project_code",
-            "package_code",
-        ],
+        on=["project_code", "package_code"],
         how="left",
     )
 
@@ -310,9 +302,7 @@ def normalise_cost_model(
     )
 
     cost = cost.drop(
-        columns=[
-            "baseline_factor",
-        ]
+        columns=["baseline_factor"]
     )
 
     # ------------------------------------------------------------------
@@ -327,37 +317,28 @@ def normalise_cost_model(
         .sum()
         .rename(
             columns={
-                "planned_cost":
-                    "project_planned_total"
+                "planned_cost": "project_planned_total"
             }
         )
     )
 
-    project_plan_totals = (
-        project_plan_totals.merge(
-            projects[
-                [
-                    "project_code",
-                    "approved_budget",
-                ]
-            ],
-            on="project_code",
-            how="left",
-        )
+    project_plan_totals = project_plan_totals.merge(
+        projects[
+            [
+                "project_code",
+                "approved_budget",
+            ]
+        ],
+        on="project_code",
+        how="left",
     )
 
-    project_plan_totals[
-        "project_baseline_factor"
-    ] = 1.0
+    project_plan_totals["project_baseline_factor"] = 1.0
 
     project_over_mask = (
-        project_plan_totals[
-            "project_planned_total"
-        ]
+        project_plan_totals["project_planned_total"]
         >
-        project_plan_totals[
-            "approved_budget"
-        ]
+        project_plan_totals["approved_budget"]
     )
 
     project_plan_totals.loc[
@@ -389,22 +370,15 @@ def normalise_cost_model(
     cost["planned_cost"] = (
         cost["planned_cost"]
         *
-        cost[
-            "project_baseline_factor"
-        ].fillna(1.0)
+        cost["project_baseline_factor"].fillna(1.0)
     )
 
     cost = cost.drop(
-        columns=[
-            "project_baseline_factor",
-        ]
+        columns=["project_baseline_factor"]
     )
 
     # ------------------------------------------------------------------
-    # FAC CONTROL
-    #
-    # FAC is a reporting snapshot. Actual and committed costs are monthly
-    # flows in this synthetic model, so they are accumulated over time.
+    # FAC FLOOR CONTROL
     # ------------------------------------------------------------------
 
     cost = (
@@ -415,51 +389,30 @@ def normalise_cost_model(
                 "package_code",
             ]
         )
-        .reset_index(
-            drop=True
-        )
+        .reset_index(drop=True)
     )
 
     repaired_snapshots = 0
 
-    for (
-        project_code,
-        project_rows
-    ) in cost.groupby(
+    for project_code, project_rows in cost.groupby(
         "project_code",
         sort=False,
     ):
-
         cumulative_actual = 0.0
         cumulative_committed = 0.0
 
         report_months = (
-            project_rows[
-                "_report_month"
-            ]
+            project_rows["_report_month"]
             .dropna()
             .sort_values()
             .unique()
         )
 
         for report_month in report_months:
-
             month_mask = (
-                (
-                    cost[
-                        "project_code"
-                    ]
-                    ==
-                    project_code
-                )
+                (cost["project_code"] == project_code)
                 &
-                (
-                    cost[
-                        "_report_month"
-                    ]
-                    ==
-                    report_month
-                )
+                (cost["_report_month"] == report_month)
             )
 
             month_actual = float(
@@ -497,12 +450,7 @@ def normalise_cost_model(
                 .sum()
             )
 
-            if (
-                current_project_fac
-                + 0.01
-                >=
-                minimum_project_fac
-            ):
+            if current_project_fac + 0.01 >= minimum_project_fac:
                 continue
 
             repaired_snapshots += 1
@@ -513,12 +461,9 @@ def normalise_cost_model(
                 current_project_fac
             )
 
-            month_indices = (
-                cost.index[
-                    month_mask
-                ]
-                .tolist()
-            )
+            month_indices = cost.index[
+                month_mask
+            ].tolist()
 
             current_fac_values = (
                 cost.loc[
@@ -526,9 +471,7 @@ def normalise_cost_model(
                     "forecast_at_completion",
                 ]
                 .fillna(0)
-                .clip(
-                    lower=0.0
-                )
+                .clip(lower=0.0)
             )
 
             current_fac_total = float(
@@ -536,24 +479,19 @@ def normalise_cost_model(
             )
 
             if current_fac_total > 0:
-
                 weights = (
                     current_fac_values
                     /
                     current_fac_total
                 )
-
             else:
-
                 package_budgets = (
                     cost.loc[
                         month_indices,
                         "package_budget",
                     ]
                     .fillna(0)
-                    .clip(
-                        lower=0.0
-                    )
+                    .clip(lower=0.0)
                 )
 
                 package_budget_total = float(
@@ -561,23 +499,14 @@ def normalise_cost_model(
                 )
 
                 if package_budget_total > 0:
-
                     weights = (
                         package_budgets
                         /
                         package_budget_total
                     )
-
                 else:
-
                     weights = pd.Series(
-                        (
-                            1.0
-                            /
-                            len(
-                                month_indices
-                            )
-                        ),
+                        1.0 / len(month_indices),
                         index=month_indices,
                     )
 
@@ -602,74 +531,42 @@ def normalise_cost_model(
     # RECOMPUTE DEPENDENT COST METRICS
     # ------------------------------------------------------------------
 
-    cost[
-        "cost_variance"
-    ] = (
-        cost[
-            "planned_cost"
-        ]
+    cost["cost_variance"] = (
+        cost["planned_cost"]
         -
-        cost[
-            "actual_cost"
-        ]
+        cost["actual_cost"]
     )
 
     planned_denominator = (
-        cost[
-            "planned_cost"
-        ]
+        cost["planned_cost"]
         .where(
-            cost[
-                "planned_cost"
-            ]
-            !=
-            0
+            cost["planned_cost"] != 0
         )
     )
 
-    cost[
-        "cost_variance_pct"
-    ] = (
-        cost[
-            "cost_variance"
-        ]
+    cost["cost_variance_pct"] = (
+        cost["cost_variance"]
         /
         planned_denominator
         *
         100
     )
 
-    cost[
-        "forecast_variance"
-    ] = (
-        cost[
-            "package_budget"
-        ]
+    cost["forecast_variance"] = (
+        cost["package_budget"]
         -
-        cost[
-            "forecast_at_completion"
-        ]
+        cost["forecast_at_completion"]
     )
 
     package_budget_denominator = (
-        cost[
-            "package_budget"
-        ]
+        cost["package_budget"]
         .where(
-            cost[
-                "package_budget"
-            ]
-            !=
-            0
+            cost["package_budget"] != 0
         )
     )
 
-    cost[
-        "forecast_variance_pct"
-    ] = (
-        cost[
-            "forecast_variance"
-        ]
+    cost["forecast_variance_pct"] = (
+        cost["forecast_variance"]
         /
         package_budget_denominator
         *
@@ -677,9 +574,7 @@ def normalise_cost_model(
     )
 
     cost = cost.drop(
-        columns=[
-            "_report_month",
-        ]
+        columns=["_report_month"]
     )
 
     repaired["cost"] = cost
@@ -692,64 +587,43 @@ def normalise_cost_model(
         cost.groupby(
             "project_code",
             as_index=False,
-        )[
-            "planned_cost"
-        ]
+        )["planned_cost"]
         .sum()
     )
 
-    final_project_plan = (
-        final_project_plan.merge(
-            projects[
-                [
-                    "project_code",
-                    "approved_budget",
-                ]
-            ],
-            on="project_code",
-            how="left",
-        )
+    final_project_plan = final_project_plan.merge(
+        projects[
+            [
+                "project_code",
+                "approved_budget",
+            ]
+        ],
+        on="project_code",
+        how="left",
     )
 
-    baseline_violations = (
-        final_project_plan[
-            (
-                final_project_plan[
-                    "planned_cost"
-                ]
-                >
-                final_project_plan[
-                    "approved_budget"
-                ]
-                +
-                0.01
-            )
-        ]
-    )
+    baseline_violations = final_project_plan[
+        (
+            final_project_plan["planned_cost"]
+            >
+            final_project_plan["approved_budget"] + 0.01
+        )
+    ]
 
     if not baseline_violations.empty:
-
         raise AssertionError(
-            "Cost baseline control failed: "
-            "one or more projects have cumulative planned "
-            "cost above approved budget."
+            "Cost baseline control failed: one or more projects have "
+            "cumulative planned cost above approved budget."
         )
 
     audit_cost = cost.copy()
-
-    audit_cost[
-        "_report_month"
-    ] = normalise_date(
-        audit_cost[
-            "report_month"
-        ]
+    audit_cost["_report_month"] = normalise_date(
+        audit_cost["report_month"]
     )
 
     latest_package_rows = (
         audit_cost
-        .sort_values(
-            "_report_month"
-        )
+        .sort_values("_report_month")
         .groupby(
             [
                 "project_code",
@@ -765,9 +639,7 @@ def normalise_cost_model(
         .groupby(
             "project_code",
             as_index=False,
-        )[
-            "forecast_at_completion"
-        ]
+        )["forecast_at_completion"]
         .sum()
     )
 
@@ -775,14 +647,11 @@ def normalise_cost_model(
         audit_cost.groupby(
             "project_code",
             as_index=False,
-        )[
-            "actual_cost"
-        ]
+        )["actual_cost"]
         .sum()
         .rename(
             columns={
-                "actual_cost":
-                    "actual_cost_to_date"
+                "actual_cost": "actual_cost_to_date"
             }
         )
     )
@@ -791,14 +660,11 @@ def normalise_cost_model(
         audit_cost.groupby(
             "project_code",
             as_index=False,
-        )[
-            "committed_cost"
-        ]
+        )["committed_cost"]
         .sum()
         .rename(
             columns={
-                "committed_cost":
-                    "committed_cost_to_date"
+                "committed_cost": "committed_cost_to_date"
             }
         )
     )
@@ -817,73 +683,47 @@ def normalise_cost_model(
         )
     )
 
-    fac_actual_violations = (
-        audit[
-            (
-                audit[
-                    "forecast_at_completion"
-                ]
-                +
-                0.01
-                <
-                audit[
-                    "actual_cost_to_date"
-                ]
-            )
-        ]
-    )
+    fac_actual_violations = audit[
+        (
+            audit["forecast_at_completion"] + 0.01
+            <
+            audit["actual_cost_to_date"]
+        )
+    ]
 
-    fac_commitment_violations = (
-        audit[
-            (
-                audit[
-                    "forecast_at_completion"
-                ]
-                +
-                0.01
-                <
-                audit[
-                    "committed_cost_to_date"
-                ]
-            )
-        ]
-    )
+    fac_commitment_violations = audit[
+        (
+            audit["forecast_at_completion"] + 0.01
+            <
+            audit["committed_cost_to_date"]
+        )
+    ]
 
     if not fac_actual_violations.empty:
-
         raise AssertionError(
-            "FAC control failed: "
-            "one or more projects have FAC below "
+            "FAC control failed: one or more projects have FAC below "
             "Actual Cost to Date."
         )
 
     if not fac_commitment_violations.empty:
-
         raise AssertionError(
-            "FAC control failed: "
-            "one or more projects have FAC below "
+            "FAC control failed: one or more projects have FAC below "
             "Committed Cost to Date."
         )
 
-    print(
-        "\nCost-model controls applied:"
-    )
-
+    print("\nCost-model controls applied:")
     print(
         "  FAC snapshots repaired: "
         f"{repaired_snapshots:,}"
     )
-
     print(
         "  Baseline violations remaining: "
         f"{len(baseline_violations):,}"
     )
-
     print(
         "  FAC < actual violations remaining: "
         f"{len(fac_actual_violations):,}"
     )
-
     print(
         "  FAC < committed violations remaining: "
         f"{len(fac_commitment_violations):,}"
@@ -899,11 +739,6 @@ def normalise_cost_model(
 def build_date_dimension(
     data: dict[str, pd.DataFrame]
 ) -> pd.DataFrame:
-
-    # Fixed reporting calendar used by the validated ControlSight model.
-    # This keeps the analytical date dimension stable even when no
-    # operational records occur on particular dates.
-
     minimum_date = pd.Timestamp("2024-01-01")
     maximum_date = pd.Timestamp("2027-12-31")
 
@@ -922,26 +757,18 @@ def build_date_dimension(
         .dt.strftime("%Y%m%d")
         .astype(int)
     )
-
     calendar["year"] = calendar["date"].dt.year
     calendar["month_number"] = calendar["date"].dt.month
     calendar["month_name"] = calendar["date"].dt.month_name()
-
     calendar["quarter"] = (
         "Q"
-        + calendar["date"]
-        .dt.quarter
-        .astype(str)
+        + calendar["date"].dt.quarter.astype(str)
     )
-
     calendar["year_month"] = (
-        calendar["date"]
-        .dt.strftime("%Y-%m")
+        calendar["date"].dt.strftime("%Y-%m")
     )
-
     calendar["date"] = (
-        calendar["date"]
-        .dt.strftime("%Y-%m-%d")
+        calendar["date"].dt.strftime("%Y-%m-%d")
     )
 
     return calendar[
@@ -1149,6 +976,11 @@ CREATE TABLE report_management_scorecard (
     health_status TEXT,
     management_status TEXT,
     forecast_variance_pct REAL,
+    progress_implied_eac REAL,
+    forecast_credibility_gap REAL,
+    forecast_credibility_gap_pct REAL,
+    forecast_credibility_status TEXT,
+    forecast_credibility_flag INTEGER,
     total_procurement_items INTEGER,
     delayed_items INTEGER,
     critical_delays INTEGER
@@ -1175,7 +1007,6 @@ CREATE TABLE report_portfolio_kpis (
 def prepare_projects(
     projects: pd.DataFrame
 ) -> pd.DataFrame:
-
     frame = projects.copy()
 
     frame["start_date"] = (
@@ -1207,7 +1038,6 @@ def prepare_projects(
 def prepare_vendors(
     vendors: pd.DataFrame
 ) -> pd.DataFrame:
-
     return vendors[
         [
             "vendor_id",
@@ -1221,7 +1051,6 @@ def prepare_vendors(
 def prepare_packages(
     packages: pd.DataFrame
 ) -> pd.DataFrame:
-
     return packages[
         [
             "package_code",
@@ -1240,7 +1069,6 @@ def prepare_packages(
 def prepare_cost(
     cost: pd.DataFrame
 ) -> pd.DataFrame:
-
     frame = cost.copy()
 
     frame["date_key"] = date_key(
@@ -1273,7 +1101,6 @@ def prepare_cost(
 def prepare_progress(
     progress: pd.DataFrame
 ) -> pd.DataFrame:
-
     frame = progress.copy()
 
     frame["date_key"] = date_key(
@@ -1297,21 +1124,17 @@ def prepare_progress(
 def prepare_schedule(
     schedule: pd.DataFrame
 ) -> pd.DataFrame:
-
     frame = schedule.copy()
 
     frame["planned_start_key"] = date_key(
         frame["planned_start"]
     )
-
     frame["planned_finish_key"] = date_key(
         frame["planned_finish"]
     )
-
     frame["actual_start_key"] = date_key(
         frame["actual_start"]
     )
-
     frame["actual_finish_key"] = date_key(
         frame["actual_finish"]
     )
@@ -1353,7 +1176,6 @@ def prepare_schedule(
 def prepare_procurement(
     procurement: pd.DataFrame
 ) -> pd.DataFrame:
-
     frame = procurement.copy()
 
     mappings = {
@@ -1397,7 +1219,6 @@ def prepare_procurement(
 def prepare_data_quality(
     issues: pd.DataFrame
 ) -> pd.DataFrame:
-
     frame = issues.copy()
 
     frame = frame.rename(
@@ -1426,15 +1247,14 @@ def calculate_health_status(
     forecast_variance_pct: float,
     progress_variance_pct: float,
 ) -> str:
-
     cost_overrun_pct = max(
         0.0,
-        -float(forecast_variance_pct)
+        -float(forecast_variance_pct),
     )
 
     progress_lag_pp = max(
         0.0,
-        -float(progress_variance_pct)
+        -float(progress_variance_pct),
     )
 
     if (
@@ -1457,15 +1277,14 @@ def calculate_management_status(
     progress_variance_pct: float,
     critical_procurement_delays: int,
 ) -> str:
-
     cost_overrun_pct = max(
         0.0,
-        -float(forecast_variance_pct)
+        -float(forecast_variance_pct),
     )
 
     progress_lag_pp = max(
         0.0,
-        -float(progress_variance_pct)
+        -float(progress_variance_pct),
     )
 
     if (
@@ -1484,10 +1303,119 @@ def calculate_management_status(
     return "Green"
 
 
+def calculate_forecast_credibility(
+    actual_cost_to_date: float,
+    actual_progress_pct: float,
+    forecast_at_completion: float,
+) -> dict[str, object]:
+    """
+    Cross-check the reported FAC against a simple progress-implied EAC.
+
+    progress_implied_eac =
+        actual_cost_to_date / (actual_progress_pct / 100)
+
+    This is deliberately labelled as a proxy / sanity check rather than
+    formal EVM. It does not overwrite the reported FAC.
+    """
+
+    actual_cost = pd.to_numeric(
+        pd.Series([actual_cost_to_date]),
+        errors="coerce",
+    ).iloc[0]
+
+    progress_pct = pd.to_numeric(
+        pd.Series([actual_progress_pct]),
+        errors="coerce",
+    ).iloc[0]
+
+    fac = pd.to_numeric(
+        pd.Series([forecast_at_completion]),
+        errors="coerce",
+    ).iloc[0]
+
+    if (
+        pd.isna(actual_cost)
+        or pd.isna(progress_pct)
+        or pd.isna(fac)
+        or progress_pct <= 0
+        or fac <= 0
+    ):
+        return {
+            "progress_implied_eac": None,
+            "forecast_credibility_gap": None,
+            "forecast_credibility_gap_pct": None,
+            "forecast_credibility_status": "Unavailable",
+            "forecast_credibility_flag": 0,
+        }
+
+    progress_fraction = float(progress_pct) / 100.0
+
+    progress_implied_eac = (
+        float(actual_cost)
+        /
+        progress_fraction
+    )
+
+    credibility_gap = (
+        progress_implied_eac
+        -
+        float(fac)
+    )
+
+    credibility_gap_pct = (
+        credibility_gap
+        /
+        float(fac)
+        *
+        100
+    )
+
+    # Only an implied EAC above the reported FAC is treated as optimism.
+    positive_gap_pct = max(
+        0.0,
+        credibility_gap_pct,
+    )
+
+    if (
+        positive_gap_pct
+        >=
+        FORECAST_CREDIBILITY_THRESHOLDS["critical"]
+    ):
+        status = "Critical"
+        flag = 1
+
+    elif (
+        positive_gap_pct
+        >=
+        FORECAST_CREDIBILITY_THRESHOLDS["high"]
+    ):
+        status = "High"
+        flag = 1
+
+    elif (
+        positive_gap_pct
+        >=
+        FORECAST_CREDIBILITY_THRESHOLDS["watch"]
+    ):
+        status = "Watch"
+        flag = 1
+
+    else:
+        status = "Normal"
+        flag = 0
+
+    return {
+        "progress_implied_eac": progress_implied_eac,
+        "forecast_credibility_gap": credibility_gap,
+        "forecast_credibility_gap_pct": credibility_gap_pct,
+        "forecast_credibility_status": status,
+        "forecast_credibility_flag": flag,
+    }
+
+
 def build_management_scorecard(
     data: dict[str, pd.DataFrame]
 ) -> pd.DataFrame:
-
     projects = data["projects"].copy()
     cost = data["cost"].copy()
     progress = data["progress"].copy()
@@ -1495,13 +1423,12 @@ def build_management_scorecard(
 
     # --------------------------------------------------------------
     # ACTUAL COST TO DATE
-    # Monthly actual cost values are flows, so they are accumulated.
     # --------------------------------------------------------------
 
     actual_cost = (
         cost.groupby(
             "project_code",
-            as_index=False
+            as_index=False,
         )["actual_cost"]
         .sum()
         .rename(
@@ -1512,10 +1439,7 @@ def build_management_scorecard(
     )
 
     # --------------------------------------------------------------
-    # LATEST FORECAST AT COMPLETION
-    #
-    # FAC is a snapshot, not a monthly flow.
-    # Latest package FAC values are aggregated to project level.
+    # LATEST FAC
     # --------------------------------------------------------------
 
     cost["_report_month"] = normalise_date(
@@ -1529,7 +1453,7 @@ def build_management_scorecard(
                 "project_code",
                 "package_code",
             ],
-            as_index=False
+            as_index=False,
         )
         .tail(1)
     )
@@ -1538,7 +1462,7 @@ def build_management_scorecard(
         latest_package_rows
         .groupby(
             "project_code",
-            as_index=False
+            as_index=False,
         )["forecast_at_completion"]
         .sum()
     )
@@ -1555,7 +1479,7 @@ def build_management_scorecard(
         progress.sort_values("_report_month")
         .groupby(
             "project_code",
-            as_index=False
+            as_index=False,
         )
         .tail(1)
     )
@@ -1576,20 +1500,20 @@ def build_management_scorecard(
     procurement_summary = (
         procurement.groupby(
             "project_code",
-            as_index=False
+            as_index=False,
         )
         .agg(
             total_procurement_items=(
                 "procurement_id",
-                "count"
+                "count",
             ),
             delayed_items=(
                 "delayed_delivery_flag",
-                "sum"
+                "sum",
             ),
             critical_delays=(
                 "critical_delay_flag",
-                "sum"
+                "sum",
             ),
         )
     )
@@ -1632,19 +1556,52 @@ def build_management_scorecard(
 
     scorecard["forecast_variance"] = (
         scorecard["approved_budget"]
-        - scorecard["forecast_at_completion"]
+        -
+        scorecard["forecast_at_completion"]
     )
 
     scorecard["forecast_variance_pct"] = (
         scorecard["forecast_variance"]
-        / scorecard["approved_budget"]
-        * 100
+        /
+        scorecard["approved_budget"]
+        *
+        100
     )
 
     scorecard["progress_variance_pct"] = (
         scorecard["actual_progress_pct"]
-        - scorecard["planned_progress_pct"]
+        -
+        scorecard["planned_progress_pct"]
     )
+
+    # --------------------------------------------------------------
+    # FORECAST CREDIBILITY CROSS-CHECK
+    # --------------------------------------------------------------
+
+    credibility = scorecard.apply(
+        lambda row: pd.Series(
+            calculate_forecast_credibility(
+                row["actual_cost_to_date"],
+                row["actual_progress_pct"],
+                row["forecast_at_completion"],
+            )
+        ),
+        axis=1,
+    )
+
+    scorecard = pd.concat(
+        [
+            scorecard,
+            credibility,
+        ],
+        axis=1,
+    )
+
+    # --------------------------------------------------------------
+    # EXISTING STATUS LOGIC
+    # Forecast credibility is not yet changing RAG or Attention Index.
+    # It is first being introduced as a transparent independent signal.
+    # --------------------------------------------------------------
 
     scorecard["health_status"] = scorecard.apply(
         lambda row: calculate_health_status(
@@ -1672,6 +1629,9 @@ def build_management_scorecard(
         "actual_progress_pct",
         "progress_variance_pct",
         "forecast_variance_pct",
+        "progress_implied_eac",
+        "forecast_credibility_gap",
+        "forecast_credibility_gap_pct",
     ]
 
     scorecard = round_numeric(
@@ -1681,6 +1641,7 @@ def build_management_scorecard(
     )
 
     integer_columns = [
+        "forecast_credibility_flag",
         "total_procurement_items",
         "delayed_items",
         "critical_delays",
@@ -1718,6 +1679,11 @@ def build_management_scorecard(
             "health_status",
             "management_status",
             "forecast_variance_pct",
+            "progress_implied_eac",
+            "forecast_credibility_gap",
+            "forecast_credibility_gap_pct",
+            "forecast_credibility_status",
+            "forecast_credibility_flag",
             "total_procurement_items",
             "delayed_items",
             "critical_delays",
@@ -1729,17 +1695,13 @@ def build_portfolio_kpis(
     data: dict[str, pd.DataFrame],
     scorecard: pd.DataFrame,
 ) -> pd.DataFrame:
-
     cost = data["cost"].copy()
     audit = data["etl_audit"].copy()
 
-    total_budget = (
-        scorecard["approved_budget"].sum()
-    )
-
-    actual_cost_to_date = (
-        scorecard["actual_cost_to_date"].sum()
-    )
+    total_budget = scorecard["approved_budget"].sum()
+    actual_cost_to_date = scorecard[
+        "actual_cost_to_date"
+    ].sum()
 
     committed_cost_to_date = (
         pd.to_numeric(
@@ -1750,38 +1712,41 @@ def build_portfolio_kpis(
         .sum()
     )
 
-    forecast_at_completion = (
-        scorecard["forecast_at_completion"].sum()
-    )
+    forecast_at_completion = scorecard[
+        "forecast_at_completion"
+    ].sum()
 
     forecast_variance = (
         total_budget
-        - forecast_at_completion
+        -
+        forecast_at_completion
     )
 
     planned_progress_pct = (
         (
             scorecard["planned_progress_pct"]
-            * scorecard["approved_budget"]
+            *
+            scorecard["approved_budget"]
         ).sum()
-        / total_budget
+        /
+        total_budget
     )
 
     actual_progress_pct = (
         (
             scorecard["actual_progress_pct"]
-            * scorecard["approved_budget"]
+            *
+            scorecard["approved_budget"]
         ).sum()
-        / total_budget
+        /
+        total_budget
     )
 
     progress_variance_pct = (
         actual_progress_pct
-        - planned_progress_pct
+        -
+        planned_progress_pct
     )
-
-    # Validation Pass Rate:
-    # accepted analytical records / source operational records.
 
     source_rows = pd.to_numeric(
         audit["input_rows"],
@@ -1798,8 +1763,10 @@ def build_portfolio_kpis(
     else:
         validation_pass_rate = (
             accepted_rows
-            / source_rows
-            * 100
+            /
+            source_rows
+            *
+            100
         )
 
     portfolio = pd.DataFrame(
@@ -1813,8 +1780,6 @@ def build_portfolio_kpis(
                 "planned_progress_pct": planned_progress_pct,
                 "actual_progress_pct": actual_progress_pct,
                 "progress_variance_pct": progress_variance_pct,
-                # Name retained for API compatibility.
-                # User-facing meaning = Validation Pass Rate.
                 "data_quality_score": validation_pass_rate,
             }
         ]
@@ -1839,7 +1804,6 @@ def assert_close(
     expected: float,
     tolerance: float = 0.02,
 ) -> None:
-
     if abs(float(actual) - float(expected)) > tolerance:
         raise AssertionError(
             f"{name}: expected {expected}, got {actual}"
@@ -1850,7 +1814,6 @@ def validate_reporting_outputs(
     scorecard: pd.DataFrame,
     portfolio: pd.DataFrame,
 ) -> None:
-
     print("\nValidating rebuilt reporting layer...")
 
     portfolio_row = portfolio.iloc[0]
@@ -1869,7 +1832,6 @@ def validate_reporting_outputs(
     )
 
     for project_code, expectations in EXPECTED_PROJECTS.items():
-
         if project_code not in indexed.index:
             raise AssertionError(
                 f"Missing project in scorecard: {project_code}"
@@ -1878,23 +1840,52 @@ def validate_reporting_outputs(
         row = indexed.loc[project_code]
 
         for column, expected in expectations.items():
-
             actual = row[column]
 
             if isinstance(expected, str):
-
                 if str(actual) != expected:
                     raise AssertionError(
                         f"{project_code} {column}: "
                         f"expected {expected}, got {actual}"
                     )
-
             else:
                 assert_close(
                     f"{project_code} {column}",
                     actual,
                     expected,
                 )
+
+    # New credibility-layer integrity checks.
+    available = scorecard[
+        scorecard["forecast_credibility_status"]
+        !=
+        "Unavailable"
+    ]
+
+    if available["progress_implied_eac"].isna().any():
+        raise AssertionError(
+            "Forecast credibility validation failed: "
+            "available projects contain null Progress-Implied EAC."
+        )
+
+    if not available.empty:
+        expected_gap = (
+            available["progress_implied_eac"]
+            -
+            available["forecast_at_completion"]
+        )
+
+        gap_error = (
+            expected_gap
+            -
+            available["forecast_credibility_gap"]
+        ).abs()
+
+        if (gap_error > 0.03).any():
+            raise AssertionError(
+                "Forecast credibility validation failed: "
+                "credibility gap does not reconcile."
+            )
 
     print("✓ Reporting regression checks passed")
 
@@ -1906,7 +1897,6 @@ def validate_reporting_outputs(
 def build_database(
     output_path: Path
 ) -> None:
-
     print("=" * 72)
     print("ControlSight Database Builder")
     print("=" * 72)
@@ -1946,38 +1936,17 @@ def build_database(
         f"  DQ issues:    {len(data['data_quality']):,}"
     )
 
-    dim_date = build_date_dimension(
-        data
-    )
+    dim_date = build_date_dimension(data)
+    dim_project = prepare_projects(data["projects"])
+    dim_vendor = prepare_vendors(data["vendors"])
+    dim_package = prepare_packages(data["packages"])
 
-    dim_project = prepare_projects(
-        data["projects"]
-    )
-
-    dim_vendor = prepare_vendors(
-        data["vendors"]
-    )
-
-    dim_package = prepare_packages(
-        data["packages"]
-    )
-
-    fact_cost = prepare_cost(
-        data["cost"]
-    )
-
-    fact_progress = prepare_progress(
-        data["progress"]
-    )
-
-    fact_schedule = prepare_schedule(
-        data["schedule"]
-    )
-
+    fact_cost = prepare_cost(data["cost"])
+    fact_progress = prepare_progress(data["progress"])
+    fact_schedule = prepare_schedule(data["schedule"])
     fact_procurement = prepare_procurement(
         data["procurement"]
     )
-
     fact_data_quality = prepare_data_quality(
         data["data_quality"]
     )
@@ -1991,10 +1960,24 @@ def build_database(
         scorecard,
     )
 
-    # Validate reporting logic before writing the DB.
     validate_reporting_outputs(
         scorecard,
         portfolio,
+    )
+
+    print("\nForecast credibility cross-check:")
+    print(
+        scorecard[
+            [
+                "project_code",
+                "forecast_at_completion",
+                "actual_progress_pct",
+                "progress_implied_eac",
+                "forecast_credibility_gap",
+                "forecast_credibility_gap_pct",
+                "forecast_credibility_status",
+            ]
+        ].to_string(index=False)
     )
 
     output_path.parent.mkdir(
@@ -2018,10 +2001,7 @@ def build_database(
             SCHEMA_SQL
         )
 
-        # ----------------------------------------------------------
         # DIMENSIONS
-        # ----------------------------------------------------------
-
         dim_project.to_sql(
             "dim_project",
             connection,
@@ -2050,10 +2030,7 @@ def build_database(
             index=False,
         )
 
-        # ----------------------------------------------------------
         # FACTS
-        # ----------------------------------------------------------
-
         fact_cost.to_sql(
             "fact_cost",
             connection,
@@ -2089,10 +2066,7 @@ def build_database(
             index=False,
         )
 
-        # ----------------------------------------------------------
         # REPORTING LAYER
-        # ----------------------------------------------------------
-
         scorecard.to_sql(
             "report_management_scorecard",
             connection,
@@ -2106,10 +2080,6 @@ def build_database(
             if_exists="append",
             index=False,
         )
-
-        # ----------------------------------------------------------
-        # FOREIGN KEY AUDIT
-        # ----------------------------------------------------------
 
         foreign_key_errors = connection.execute(
             "PRAGMA foreign_key_check;"
@@ -2154,7 +2124,6 @@ def build_database(
 # ======================================================================
 
 def parse_arguments() -> argparse.Namespace:
-
     parser = argparse.ArgumentParser(
         description=(
             "Build the ControlSight SQLite analytical database "
@@ -2176,7 +2145,6 @@ def parse_arguments() -> argparse.Namespace:
 
 
 if __name__ == "__main__":
-
     args = parse_arguments()
 
     output = args.output

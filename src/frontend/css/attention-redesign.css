@@ -1,0 +1,744 @@
+/* ============================================================
+   CONTROLSIGHT
+   ATTENTION TUNING REDESIGN
+   v1.0
+   ============================================================ */
+
+
+/* ============================================================
+   PAGE WRAPPER
+   ============================================================ */
+
+#attention-tuning {
+    width: 100% !important;
+
+    max-width: none !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+}
+
+
+/* ============================================================
+   HERO
+   ============================================================ */
+
+#attention-tuning
+.attention-hero,
+#attention-tuning
+.attention-tuning-hero,
+#attention-tuning
+.module-hero {
+    min-height: 0 !important;
+
+    margin-bottom: 16px !important;
+
+    padding: 20px 22px !important;
+
+    border-radius: 10px !important;
+}
+
+
+#attention-tuning
+.attention-hero h2,
+#attention-tuning
+.attention-tuning-hero h2,
+#attention-tuning
+.module-hero h2 {
+    margin: 3px 0 5px !important;
+
+    font-size: 22px !important;
+
+    line-height: 1.2 !important;
+
+    letter-spacing: -0.02em;
+}
+
+
+#attention-tuning
+.attention-hero p,
+#attention-tuning
+.attention-tuning-hero p,
+#attention-tuning
+.module-hero p {
+    max-width: 760px;
+
+    margin: 0 !important;
+
+    font-size: 11px !important;
+
+    line-height: 1.55 !important;
+}
+
+
+/* ============================================================
+   MAIN LAYOUT
+   ============================================================ */
+
+#attention-tuning
+.attention-layout,
+#attention-tuning
+.attention-tuning-layout,
+#attention-tuning
+.attention-grid {
+    display: grid !important;
+
+    grid-template-columns:
+        minmax(
+            320px,
+            0.78fr
+        )
+        minmax(
+            620px,
+            1.42fr
+        ) !important;
+
+    align-items: start !important;
+
+    gap: 16px !important;
+}
+
+
+/* ============================================================
+   PANELS
+   ============================================================ */
+
+#attention-tuning
+.attention-config-panel,
+#attention-tuning
+.attention-ranking-panel,
+#attention-tuning
+.attention-panel,
+#attention-tuning
+.panel {
+    background: #ffffff !important;
+
+    border:
+        1px solid
+        #e2e8f0 !important;
+
+    border-radius: 11px !important;
+
+    box-shadow:
+        0 2px 10px
+        rgba(
+            15,
+            23,
+            42,
+            0.04
+        ) !important;
+}
+
+
+#attention-tuning
+.attention-config-panel,
+#attention-tuning
+.attention-ranking-panel {
+    padding: 18px !important;
+}
+
+
+/* ============================================================
+   PANEL HEADERS
+   ============================================================ */
+
+#attention-tuning
+.attention-config-panel h3,
+#attention-tuning
+.attention-ranking-panel h3 {
+    margin: 0 !important;
+
+    color: #0f172a !important;
+
+    font-size: 17px !important;
+
+    font-weight: 780 !important;
+
+    line-height: 1.25 !important;
+}
+
+
+#attention-tuning
+.attention-config-panel h3 + p,
+#attention-tuning
+.attention-ranking-panel h3 + p {
+    margin:
+        5px 0 16px !important;
+
+    color: #64748b !important;
+
+    font-size: 10px !important;
+
+    line-height: 1.45 !important;
+}
+
+
+/* ============================================================
+   CONFIGURATION LABELS
+   ============================================================ */
+
+#attention-tuning
+label,
+#attention-tuning
+.attention-control-label,
+#attention-tuning
+.weight-label,
+#attention-tuning
+.threshold-label {
+    color: #334155 !important;
+
+    font-size: 10px !important;
+
+    font-weight: 760 !important;
+}
+
+
+#attention-tuning
+.control-description,
+#attention-tuning
+.weight-description,
+#attention-tuning
+.threshold-description {
+    color: #94a3b8 !important;
+
+    font-size: 8px !important;
+
+    line-height: 1.4 !important;
+}
+
+
+/* ============================================================
+   CONFIGURATION GROUPS
+   ============================================================ */
+
+#attention-tuning
+.attention-control-row,
+#attention-tuning
+.weight-row,
+#attention-tuning
+.threshold-row {
+    min-height: 54px !important;
+
+    padding:
+        10px 0 !important;
+
+    border-bottom:
+        1px solid
+        #eef2f7 !important;
+}
+
+
+#attention-tuning
+.attention-control-row:last-child,
+#attention-tuning
+.weight-row:last-child,
+#attention-tuning
+.threshold-row:last-child {
+    border-bottom: 0 !important;
+}
+
+
+/* ============================================================
+   SLIDERS
+   ============================================================ */
+
+#attention-tuning
+input[type="range"] {
+    height: 5px !important;
+
+    cursor: pointer;
+}
+
+
+#attention-tuning
+input[type="number"] {
+    min-height: 36px !important;
+
+    padding:
+        7px 10px !important;
+
+    background: #f8fafc !important;
+
+    border:
+        1px solid
+        #cbd5e1 !important;
+
+    border-radius: 7px !important;
+
+    color: #0f172a !important;
+
+    font-size: 12px !important;
+
+    font-weight: 760 !important;
+}
+
+
+/* ============================================================
+   SECTION LABELS
+   ============================================================ */
+
+#attention-tuning
+.config-section-title,
+#attention-tuning
+.attention-section-label {
+    display: block;
+
+    margin:
+        16px 0 8px !important;
+
+    color: #475569 !important;
+
+    font-size: 9px !important;
+
+    font-weight: 850 !important;
+
+    letter-spacing: 0.06em !important;
+
+    text-transform: uppercase;
+}
+
+
+/* ============================================================
+   TOTAL SCORE
+   ============================================================ */
+
+#attention-tuning
+.total-score,
+#attention-tuning
+.attention-total-score {
+    min-height: 44px !important;
+
+    margin:
+        12px 0 !important;
+
+    padding:
+        10px 12px !important;
+
+    background: #eff6ff !important;
+
+    border:
+        1px solid
+        #bfdbfe !important;
+
+    border-radius: 8px !important;
+}
+
+
+#attention-tuning
+.total-score strong,
+#attention-tuning
+.attention-total-score strong {
+    color: #1d4ed8 !important;
+
+    font-size: 18px !important;
+}
+
+
+/* ============================================================
+   ACTION BUTTONS
+   ============================================================ */
+
+#attention-tuning button {
+    min-height: 36px;
+
+    font-size: 10px !important;
+
+    font-weight: 750 !important;
+}
+
+
+#attention-tuning
+.attention-actions,
+#attention-tuning
+.config-actions {
+    display: flex !important;
+
+    flex-wrap: wrap !important;
+
+    gap: 8px !important;
+
+    margin-top: 16px !important;
+}
+
+
+/* ============================================================
+   RANKING SUMMARY
+   ============================================================ */
+
+#attention-tuning
+.attention-summary,
+#attention-tuning
+.ranking-summary {
+    display: grid !important;
+
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(
+                100px,
+                1fr
+            )
+        ) !important;
+
+    gap: 8px !important;
+
+    margin-bottom: 14px !important;
+}
+
+
+#attention-tuning
+.attention-summary-item,
+#attention-tuning
+.ranking-summary-item {
+    min-height: 62px !important;
+
+    padding:
+        11px 12px !important;
+
+    background: #f8fafc !important;
+
+    border:
+        1px solid
+        #e2e8f0 !important;
+
+    border-radius: 8px !important;
+}
+
+
+#attention-tuning
+.attention-summary-item strong,
+#attention-tuning
+.ranking-summary-item strong {
+    display: block;
+
+    color: #0f172a !important;
+
+    font-size: 18px !important;
+
+    font-weight: 820 !important;
+
+    line-height: 1.05 !important;
+}
+
+
+#attention-tuning
+.attention-summary-item span,
+#attention-tuning
+.ranking-summary-item span {
+    display: block;
+
+    margin-top: 5px;
+
+    color: #64748b !important;
+
+    font-size: 9px !important;
+
+    font-weight: 760 !important;
+}
+
+
+/* ============================================================
+   RANKING TABLE
+   ============================================================ */
+
+#attention-tuning
+.table-container,
+#attention-tuning
+.attention-ranking-table-wrapper {
+    width: 100%;
+
+    overflow-x: auto;
+
+    background: #ffffff;
+
+    border:
+        1px solid
+        #e2e8f0;
+
+    border-radius: 9px;
+}
+
+
+#attention-tuning table {
+    width: 100% !important;
+
+    min-width: 760px !important;
+
+    border-collapse: collapse !important;
+}
+
+
+#attention-tuning th {
+    padding:
+        11px 12px !important;
+
+    background: #f8fafc !important;
+
+    color: #64748b !important;
+
+    font-size: 9px !important;
+
+    font-weight: 820 !important;
+
+    letter-spacing: 0.035em;
+
+    text-align: left;
+
+    text-transform: uppercase;
+}
+
+
+#attention-tuning td {
+    padding:
+        13px 12px !important;
+
+    color: #334155 !important;
+
+    font-size: 10px !important;
+
+    line-height: 1.4 !important;
+
+    vertical-align: middle !important;
+
+    border-top:
+        1px solid
+        #eef2f7 !important;
+}
+
+
+#attention-tuning tbody tr:hover {
+    background: #f8fafc;
+}
+
+
+/* ============================================================
+   PROJECT NAME
+   ============================================================ */
+
+#attention-tuning
+.project-name,
+#attention-tuning
+.ranking-project-name {
+    display: block;
+
+    color: #0f172a !important;
+
+    font-size: 11px !important;
+
+    font-weight: 760 !important;
+}
+
+
+#attention-tuning
+.project-code,
+#attention-tuning
+.ranking-project-code {
+    display: block;
+
+    margin-top: 2px;
+
+    color: #94a3b8 !important;
+
+    font-size: 8px !important;
+
+    font-weight: 700 !important;
+}
+
+
+/* ============================================================
+   SCORE
+   ============================================================ */
+
+#attention-tuning
+.attention-score,
+#attention-tuning
+.ranking-score {
+    color: #0f172a !important;
+
+    font-size: 15px !important;
+
+    font-weight: 820 !important;
+}
+
+
+#attention-tuning
+.attention-score small,
+#attention-tuning
+.ranking-score small {
+    display: block;
+
+    margin-top: 2px;
+
+    color: #94a3b8 !important;
+
+    font-size: 8px !important;
+
+    font-weight: 600 !important;
+}
+
+
+/* ============================================================
+   LEVEL BADGES
+   ============================================================ */
+
+#attention-tuning
+.priority-level,
+#attention-tuning
+.status-badge {
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    min-width: 54px;
+
+    min-height: 23px;
+
+    padding:
+        4px 8px !important;
+
+    border-radius: 999px !important;
+
+    font-size: 8px !important;
+
+    font-weight: 820 !important;
+}
+
+
+/* ============================================================
+   PRIMARY DRIVER
+   ============================================================ */
+
+#attention-tuning
+.primary-driver,
+#attention-tuning
+.ranking-driver {
+    color: #475569 !important;
+
+    font-size: 10px !important;
+
+    font-weight: 700 !important;
+}
+
+
+/* ============================================================
+   SCORE BREAKDOWN
+   ============================================================ */
+
+#attention-tuning
+.score-breakdown {
+    display: grid;
+
+    gap: 4px;
+}
+
+
+#attention-tuning
+.score-breakdown-row {
+    display: grid;
+
+    grid-template-columns:
+        58px
+        minmax(
+            70px,
+            1fr
+        );
+
+    align-items: center;
+
+    gap: 6px;
+}
+
+
+#attention-tuning
+.score-breakdown-row span {
+    color: #94a3b8 !important;
+
+    font-size: 7px !important;
+
+    font-weight: 650 !important;
+}
+
+
+#attention-tuning
+.score-breakdown-track {
+    height: 5px !important;
+
+    overflow: hidden;
+
+    background: #e2e8f0 !important;
+
+    border-radius: 999px !important;
+}
+
+
+#attention-tuning
+.score-breakdown-bar {
+    height: 100% !important;
+
+    border-radius: inherit !important;
+}
+
+
+/* ============================================================
+   REDUCE EMPTY SPACE
+   ============================================================ */
+
+#attention-tuning
+.panel + .panel,
+#attention-tuning
+.attention-panel + .attention-panel {
+    margin-top: 12px !important;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 1150px) {
+
+    #attention-tuning
+    .attention-layout,
+    #attention-tuning
+    .attention-tuning-layout,
+    #attention-tuning
+    .attention-grid {
+        grid-template-columns:
+            1fr !important;
+    }
+
+
+    #attention-tuning
+    .attention-config-panel {
+        max-width: none !important;
+    }
+}
+
+
+@media (max-width: 700px) {
+
+    #attention-tuning
+    .attention-summary,
+    #attention-tuning
+    .ranking-summary {
+        grid-template-columns:
+            repeat(
+                2,
+                1fr
+            ) !important;
+    }
+
+
+    #attention-tuning
+    .attention-hero,
+    #attention-tuning
+    .attention-tuning-hero,
+    #attention-tuning
+    .module-hero {
+        padding:
+            16px !important;
+    }
+}
