@@ -910,6 +910,7 @@ async function loadPortfolioKPIs() {
             "portfolio-kpis"
         );
 
+
     if (!container) {
         return;
     }
@@ -923,15 +924,66 @@ async function loadPortfolioKPIs() {
             );
 
 
-        const variance =
+        const forecastVariance =
             numericValue(
                 data.forecast_variance
             );
 
 
+        const actualProgress =
+            numericValue(
+                data.actual_progress_pct
+            );
+
+
+        const plannedProgress =
+            numericValue(
+                data.planned_progress_pct
+            );
+
+
+        const progressVariance =
+            actualProgress -
+            plannedProgress;
+
+
+        const isOverrun =
+            forecastVariance < 0;
+
+
+        const forecastExposure =
+            Math.abs(
+                forecastVariance
+            );
+
+
+        const forecastLabel =
+            isOverrun
+                ? "Forecast Overrun"
+                : "Forecast Saving";
+
+
+        const forecastNote =
+            isOverrun
+                ? "FAC above budget"
+                : "FAC below budget";
+
+
+        const forecastClass =
+            isOverrun
+                ? "metric-negative"
+                : "metric-positive";
+
+
+        const progressClass =
+            getMetricClass(
+                progressVariance
+            );
+
+
         container.innerHTML = `
 
-            <div class="kpi-card">
+            <div class="kpi-card kpi-card-primary">
 
                 <span class="kpi-label">
                     Portfolio Budget
@@ -943,25 +995,14 @@ async function loadPortfolioKPIs() {
                     )}
                 </strong>
 
-            </div>
-
-
-            <div class="kpi-card">
-
-                <span class="kpi-label">
-                    Actual Cost
+                <span class="kpi-supporting-text">
+                    Approved portfolio budget
                 </span>
 
-                <strong class="kpi-value">
-                    ${formatCurrency(
-                        data.actual_cost_to_date
-                    )}
-                </strong>
-
             </div>
 
 
-            <div class="kpi-card">
+            <div class="kpi-card kpi-card-primary">
 
                 <span class="kpi-label">
                     Forecast at Completion
@@ -973,64 +1014,67 @@ async function loadPortfolioKPIs() {
                     )}
                 </strong>
 
+                <span class="kpi-supporting-text">
+                    Current forecast completion cost
+                </span>
+
             </div>
 
 
-            <div class="kpi-card">
+            <div class="kpi-card kpi-card-primary">
 
                 <span class="kpi-label">
-                    Forecast Variance
-                    <small>
-                        Budget − FAC
-                    </small>
+                    ${forecastLabel}
                 </span>
 
                 <strong
                     class="
                         kpi-value
-                        ${getMetricClass(
-                            variance
-                        )}
+                        ${forecastClass}
                     "
                 >
                     ${formatCurrency(
-                        variance
+                        forecastExposure
                     )}
                 </strong>
+
+                <span class="kpi-supporting-text">
+                    ${forecastNote}
+                </span>
 
             </div>
 
 
-            <div class="kpi-card">
+            <div class="kpi-card kpi-card-primary">
 
                 <span class="kpi-label">
-                    Actual Progress
+                    Progress vs Plan
                 </span>
 
                 <strong class="kpi-value">
                     ${formatPercentage(
-                        data.actual_progress_pct
+                        actualProgress
                     )}
                 </strong>
 
-            </div>
-
-
-            <div class="kpi-card">
-
-                <span class="kpi-label">
-                    Validation Pass Rate
+                <span class="
+                    kpi-supporting-text
+                    ${progressClass}
+                ">
+                    ${formatPercentage(
+                        plannedProgress
+                    )}
+                    planned
+                    ·
+                    ${formatPercentagePoints(
+                        progressVariance
+                    )}
                 </span>
-
-                <strong class="kpi-value">
-                    ${formatValidationRate(
-                        data.data_quality_score
-                    )}
-                </strong>
 
             </div>
 
         `;
+
 
     } catch (error) {
 
@@ -1049,6 +1093,8 @@ async function loadPortfolioKPIs() {
         `;
     }
 }
+
+
 
 
 /* ============================================================

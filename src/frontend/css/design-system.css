@@ -1,0 +1,1026 @@
+/* ============================================================
+   CONTROLSIGHT
+   GLOBAL DESIGN SYSTEM
+   v1.0
+
+   Goals
+   - readable at 100% zoom
+   - consistent typography
+   - compact desktop navigation
+   - predictable page spacing
+   - consistent panels / tables / forms
+   ============================================================ */
+
+:root {
+    --cs-sidebar-width: 236px;
+
+    --cs-bg: #f4f7fb;
+    --cs-panel: #ffffff;
+    --cs-border: #dfe6ee;
+
+    --cs-text: #0f172a;
+    --cs-text-secondary: #475569;
+    --cs-text-muted: #64748b;
+
+    --cs-radius: 10px;
+    --cs-shadow:
+        0 2px 10px
+        rgba(15, 23, 42, 0.045);
+}
+
+
+/* ============================================================
+   BASE TYPOGRAPHY
+   ============================================================ */
+
+html {
+    font-size: 16px !important;
+}
+
+
+body {
+    color: var(--cs-text) !important;
+
+    background: var(--cs-bg) !important;
+
+    font-size: 14px !important;
+
+    line-height: 1.5 !important;
+}
+
+
+body,
+button,
+input,
+select,
+textarea {
+    font-family:
+        Inter,
+        ui-sans-serif,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif !important;
+}
+
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+
+.topbar {
+    min-height: 68px !important;
+
+    padding:
+        10px
+        28px !important;
+
+    background: #ffffff !important;
+
+    border-bottom:
+        1px solid
+        var(--cs-border) !important;
+}
+
+
+.topbar-eyebrow {
+    margin-bottom: 2px !important;
+
+    color: var(--cs-text-muted) !important;
+
+    font-size: 11px !important;
+
+    font-weight: 750 !important;
+
+    letter-spacing: 0.08em !important;
+}
+
+
+.topbar h1 {
+    margin: 0 !important;
+
+    color: var(--cs-text) !important;
+
+    font-size: 20px !important;
+
+    font-weight: 750 !important;
+
+    line-height: 1.2 !important;
+
+    letter-spacing: -0.02em !important;
+}
+
+
+/* ============================================================
+   PAGE CONTENT
+   ============================================================ */
+
+.dashboard-content {
+    box-sizing: border-box !important;
+
+    width: 100% !important;
+
+    max-width: none !important;
+
+    padding:
+        24px
+        30px
+        56px !important;
+}
+
+
+/* ============================================================
+   STANDARD SECTION HEADERS
+   ============================================================ */
+
+.section-header,
+.data-quality-section-header {
+    margin-bottom: 18px !important;
+}
+
+
+.section-header h2,
+.data-quality-section-header h2 {
+    margin:
+        0
+        0
+        5px !important;
+
+    color: var(--cs-text) !important;
+
+    font-size: 24px !important;
+
+    font-weight: 760 !important;
+
+    line-height: 1.2 !important;
+
+    letter-spacing: -0.025em !important;
+}
+
+
+.section-header h3 {
+    font-size: 18px !important;
+}
+
+
+.section-header p,
+.data-quality-section-header p {
+    max-width: 760px !important;
+
+    margin: 0 !important;
+
+    color: var(--cs-text-secondary) !important;
+
+    font-size: 14px !important;
+
+    line-height: 1.55 !important;
+}
+
+
+/* ============================================================
+   NORMAL BODY TEXT
+   ============================================================ */
+
+.dashboard-content p {
+    font-size: 14px;
+}
+
+
+.dashboard-content small {
+    font-size: 12px;
+}
+
+
+.dashboard-content label {
+    font-size: 13px !important;
+}
+
+
+/* ============================================================
+   PANELS / CARDS
+   ============================================================ */
+
+.dashboard-content .panel,
+.dashboard-content .card,
+.dashboard-content .portfolio-attention-panel,
+.dashboard-content .portfolio-exposure-panel,
+.dashboard-content .attention-config-panel,
+.dashboard-content .attention-ranking-panel {
+    background: var(--cs-panel) !important;
+
+    border:
+        1px solid
+        var(--cs-border) !important;
+
+    border-radius:
+        var(--cs-radius) !important;
+
+    box-shadow:
+        var(--cs-shadow) !important;
+}
+
+
+/* ============================================================
+   KPI CARDS
+   ============================================================ */
+
+.kpi-card {
+    min-height: 105px !important;
+
+    padding: 17px !important;
+}
+
+
+.kpi-label {
+    color: var(--cs-text-muted) !important;
+
+    font-size: 12px !important;
+
+    font-weight: 700 !important;
+
+    line-height: 1.35 !important;
+}
+
+
+.kpi-label small {
+    margin-top: 2px;
+
+    font-size: 11px !important;
+}
+
+
+.kpi-value {
+    margin-top: 9px !important;
+
+    font-size: 24px !important;
+
+    font-weight: 800 !important;
+
+    line-height: 1.1 !important;
+}
+
+
+/* ============================================================
+   NAVIGATION TYPOGRAPHY
+   ============================================================ */
+
+.sidebar {
+    font-size: 14px !important;
+}
+
+
+.sidebar-nav {
+    padding-top: 14px !important;
+}
+
+
+.sidebar-nav .nav-label {
+    font-size: 11px !important;
+
+    font-weight: 750 !important;
+
+    letter-spacing: 0.08em !important;
+}
+
+
+.sidebar-nav .nav-item {
+    min-height: 42px !important;
+
+    padding:
+        9px
+        12px !important;
+
+    font-size: 14px !important;
+
+    font-weight: 600 !important;
+}
+
+
+.sidebar-nav .nav-icon {
+    width: 18px !important;
+
+    height: 18px !important;
+}
+
+
+/* ============================================================
+   DESKTOP SIDEBAR
+   ============================================================ */
+
+@media (min-width: 1180px) {
+
+    .sidebar {
+        position: fixed !important;
+
+        top: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+
+        width:
+            var(--cs-sidebar-width) !important;
+
+        min-width:
+            var(--cs-sidebar-width) !important;
+
+        max-width:
+            var(--cs-sidebar-width) !important;
+
+        height: 100vh !important;
+
+        transform:
+            translateX(0) !important;
+
+        visibility: visible !important;
+
+        box-shadow:
+            none !important;
+    }
+
+
+    .topbar {
+        box-sizing: border-box !important;
+
+        width:
+            calc(
+                100% -
+                var(--cs-sidebar-width)
+            ) !important;
+
+        margin-left:
+            var(--cs-sidebar-width) !important;
+    }
+
+
+    .dashboard-content {
+        box-sizing: border-box !important;
+
+        width:
+            calc(
+                100% -
+                var(--cs-sidebar-width)
+            ) !important;
+
+        margin-left:
+            var(--cs-sidebar-width) !important;
+    }
+
+
+    .drawer-toggle,
+    .drawer-close,
+    .drawer-backdrop {
+        display: none !important;
+    }
+
+}
+
+
+/* ============================================================
+   MOBILE / TABLET DRAWER
+   ============================================================ */
+
+@media (max-width: 1179px) {
+
+    .topbar,
+    .dashboard-content {
+        width: 100% !important;
+
+        margin-left: 0 !important;
+    }
+
+
+    .sidebar {
+        position: fixed !important;
+
+        top: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+
+        width: 270px !important;
+
+        transform:
+            translateX(-105%);
+    }
+
+
+    .sidebar.drawer-open {
+        transform:
+            translateX(0);
+    }
+
+}
+
+
+/* ============================================================
+   REPORTING PERIOD
+   Temporary compact treatment.
+   Next pass moves this into the header.
+   ============================================================ */
+
+.reporting-period-section,
+.reporting-period-panel,
+.reporting-context,
+#reporting-period-section {
+    min-height: 0 !important;
+
+    margin:
+        0
+        0
+        18px !important;
+
+    padding:
+        12px
+        14px !important;
+}
+
+
+.reporting-period-section h2,
+.reporting-period-panel h2 {
+    margin:
+        0
+        0
+        3px !important;
+
+    font-size: 14px !important;
+}
+
+
+.reporting-period-section p,
+.reporting-period-panel p {
+    margin: 0 !important;
+
+    color: var(--cs-text-muted) !important;
+
+    font-size: 12px !important;
+}
+
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+
+.table-container {
+    overflow-x: auto;
+}
+
+
+.dashboard-content table {
+    width: 100%;
+
+    font-size: 14px !important;
+}
+
+
+.dashboard-content th {
+    padding:
+        11px
+        12px !important;
+
+    color: var(--cs-text-muted) !important;
+
+    font-size: 12px !important;
+
+    font-weight: 750 !important;
+
+    line-height: 1.35 !important;
+}
+
+
+.dashboard-content td {
+    padding:
+        12px !important;
+
+    color: var(--cs-text-secondary) !important;
+
+    font-size: 13px !important;
+
+    line-height: 1.45 !important;
+}
+
+
+/* ============================================================
+   MANAGEMENT ATTENTION
+   ============================================================ */
+
+.attention-summary-item strong {
+    font-size: 20px !important;
+}
+
+
+.attention-summary-item span {
+    font-size: 11px !important;
+}
+
+
+.priority-code {
+    font-size: 11px !important;
+}
+
+
+.priority-project-heading > div > strong {
+    font-size: 14px !important;
+}
+
+
+.priority-level {
+    font-size: 11px !important;
+}
+
+
+.priority-driver span {
+    font-size: 11px !important;
+}
+
+
+.priority-driver strong {
+    font-size: 12px !important;
+}
+
+
+.priority-metrics span {
+    font-size: 11px !important;
+}
+
+
+.priority-metrics strong {
+    font-size: 13px !important;
+}
+
+
+.attention-component span {
+    font-size: 10px !important;
+}
+
+
+.attention-component strong {
+    font-size: 12px !important;
+}
+
+
+.attention-score strong {
+    font-size: 22px !important;
+}
+
+
+.attention-score small {
+    font-size: 11px !important;
+}
+
+
+/* ============================================================
+   METHODOLOGY / SECONDARY CONTENT
+   ============================================================ */
+
+.attention-methodology p,
+.validation-definition-note p {
+    font-size: 12px !important;
+
+    line-height: 1.5 !important;
+}
+
+
+.attention-methodology span,
+.validation-definition-note strong {
+    font-size: 12px !important;
+}
+
+
+.attention-methodology-summary span {
+    font-size: 11px !important;
+}
+
+
+/* ============================================================
+   FORMS
+   ============================================================ */
+
+.dashboard-content input,
+.dashboard-content select,
+.dashboard-content textarea {
+    min-height: 38px;
+
+    font-size: 14px !important;
+}
+
+
+.dashboard-content button {
+    font-size: 13px !important;
+}
+
+
+/* ============================================================
+   REDUCE EXCESSIVE VERTICAL SPACE
+   ============================================================ */
+
+.dashboard-content
+> section {
+    margin-top: 0 !important;
+}
+
+
+.dashboard-content
+section + section {
+    margin-top: 20px !important;
+}
+
+
+/* ============================================================
+   SMALLER SCREENS
+   ============================================================ */
+
+@media (max-width: 700px) {
+
+    .dashboard-content {
+        padding:
+            18px
+            16px
+            42px !important;
+    }
+
+
+    .topbar {
+        padding:
+            10px
+            16px !important;
+    }
+
+
+    .section-header h2,
+    .data-quality-section-header h2 {
+        font-size: 21px !important;
+    }
+
+}
+
+/* ============================================================
+   PORTFOLIO PRIMARY KPI ROW
+   ============================================================ */
+
+#portfolio-kpis {
+    display: grid !important;
+
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(0, 1fr)
+        ) !important;
+
+    gap: 14px !important;
+
+    margin-bottom: 18px !important;
+}
+
+
+#portfolio-kpis
+.kpi-card-primary {
+    min-height: 118px !important;
+
+    padding: 18px !important;
+}
+
+
+#portfolio-kpis
+.kpi-card-primary
+.kpi-label {
+    display: block !important;
+
+    margin-bottom: 10px !important;
+
+    color: #64748b !important;
+
+    font-size: 12px !important;
+
+    font-weight: 750 !important;
+
+    letter-spacing: 0.02em !important;
+
+    text-transform: uppercase;
+}
+
+
+#portfolio-kpis
+.kpi-card-primary
+.kpi-value {
+    display: block !important;
+
+    margin: 0 !important;
+
+    color: #0f172a;
+
+    font-size: 27px !important;
+
+    font-weight: 800 !important;
+
+    line-height: 1.05 !important;
+
+    letter-spacing: -0.025em !important;
+}
+
+
+#portfolio-kpis
+.kpi-supporting-text {
+    display: block !important;
+
+    margin-top: 9px !important;
+
+    color: #64748b;
+
+    font-size: 12px !important;
+
+    font-weight: 600 !important;
+
+    line-height: 1.35 !important;
+}
+
+
+#portfolio-kpis
+.metric-negative {
+    color: #dc2626 !important;
+}
+
+
+#portfolio-kpis
+.metric-positive {
+    color: #15803d !important;
+}
+
+
+@media (max-width: 1150px) {
+
+    #portfolio-kpis {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            ) !important;
+    }
+
+}
+
+
+@media (max-width: 650px) {
+
+    #portfolio-kpis {
+        grid-template-columns:
+            1fr !important;
+    }
+
+}
+
+/* ============================================================
+   FORECAST EXPOSURE — READABILITY CLEANUP
+   ============================================================ */
+
+#portfolio-cost-exposure .exposure-header {
+    margin-bottom: 16px !important;
+}
+
+
+#portfolio-cost-exposure .section-eyebrow {
+    font-size: 10px !important;
+}
+
+
+#portfolio-cost-exposure h3 {
+    font-size: 18px !important;
+
+    margin:
+        3px 0 4px !important;
+}
+
+
+#portfolio-cost-exposure .exposure-header p {
+    max-width: 600px !important;
+
+    font-size: 12px !important;
+
+    line-height: 1.45 !important;
+}
+
+
+#portfolio-cost-exposure .exposure-legend {
+    display: flex !important;
+
+    align-items: center !important;
+
+    gap: 14px !important;
+}
+
+
+#portfolio-cost-exposure .exposure-legend span {
+    font-size: 11px !important;
+
+    font-weight: 650 !important;
+}
+
+
+#portfolio-cost-exposure .exposure-row {
+    min-height: 52px !important;
+}
+
+
+#portfolio-cost-exposure .exposure-project-name {
+    font-size: 12px !important;
+
+    font-weight: 750 !important;
+}
+
+
+#portfolio-cost-exposure .exposure-project-code {
+    font-size: 10px !important;
+}
+
+
+#portfolio-cost-exposure .exposure-values strong {
+    font-size: 12px !important;
+}
+
+
+#portfolio-cost-exposure .exposure-values span {
+    font-size: 10px !important;
+}
+
+/* ============================================================
+   MANAGEMENT ATTENTION — METHODOLOGY DE-EMPHASIS
+   ============================================================ */
+
+#portfolio-attention-panel
+.attention-methodology-summary {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-end !important;
+
+    gap: 5px !important;
+
+    max-width: 360px !important;
+
+    opacity: 0.78;
+}
+
+
+#portfolio-attention-panel
+.attention-methodology-summary span {
+    padding:
+        4px
+        7px !important;
+
+    background: #f8fafc !important;
+
+    border:
+        1px solid
+        #e2e8f0 !important;
+
+    border-radius: 999px !important;
+
+    color: #64748b !important;
+
+    font-size: 10px !important;
+
+    font-weight: 650 !important;
+}
+
+
+#portfolio-attention-panel
+.attention-methodology-summary strong {
+    color: #475569 !important;
+
+    font-size: 10px !important;
+}
+
+
+#portfolio-attention-panel
+.attention-methodology {
+    margin-top: 12px !important;
+
+    padding:
+        9px
+        11px !important;
+
+    background: #f8fafc !important;
+
+    border:
+        1px solid
+        #e2e8f0 !important;
+
+    border-radius: 7px !important;
+
+    opacity: 0.82;
+}
+
+
+#portfolio-attention-panel
+.attention-methodology span {
+    color: #475569 !important;
+
+    font-size: 11px !important;
+
+    font-weight: 700 !important;
+}
+
+
+#portfolio-attention-panel
+.attention-methodology p {
+    max-width: 680px !important;
+
+    margin:
+        2px
+        0
+        0 !important;
+
+    color: #64748b !important;
+
+    font-size: 11px !important;
+
+    line-height: 1.4 !important;
+}
+
+
+#portfolio-attention-panel
+.attention-methodology > strong {
+    color: #64748b !important;
+
+    font-size: 10px !important;
+
+    font-weight: 650 !important;
+}
+
+/* ============================================================
+   FOOTER — FINAL APPLICATION FOOTER
+   ============================================================ */
+
+.dashboard-footer {
+    display: flex !important;
+
+    align-items: center !important;
+    justify-content: space-between !important;
+
+    gap: 24px !important;
+
+    width: 100% !important;
+
+    margin-top: 36px !important;
+
+    padding:
+        18px
+        4px
+        8px !important;
+
+    background: transparent !important;
+
+    border-top:
+        1px solid
+        #dfe6ee !important;
+
+    box-shadow: none !important;
+}
+
+
+.dashboard-footer > div:first-child {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 2px;
+}
+
+
+.dashboard-footer strong {
+    color: #334155 !important;
+
+    font-size: 12px !important;
+
+    font-weight: 750 !important;
+}
+
+
+.dashboard-footer span {
+    color: #94a3b8 !important;
+
+    font-size: 11px !important;
+}
+
+
+.dashboard-footer .footer-meta {
+    display: flex !important;
+
+    flex-wrap: wrap !important;
+
+    justify-content: flex-end !important;
+
+    gap: 12px !important;
+}
+
+
+@media (max-width: 750px) {
+
+    .dashboard-footer {
+        align-items: flex-start !important;
+
+        flex-direction: column !important;
+    }
+
+
+    .dashboard-footer .footer-meta {
+        justify-content: flex-start !important;
+    }
+
+}

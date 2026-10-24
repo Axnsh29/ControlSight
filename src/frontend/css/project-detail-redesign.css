@@ -1,0 +1,547 @@
+/* ============================================================
+   CONTROLSIGHT
+   PROJECT DETAIL / PERFORMANCE REDESIGN
+   ============================================================ */
+
+
+/* ============================================================
+   PAGE
+   ============================================================ */
+
+#project-detail {
+    width: 100% !important;
+    max-width: none !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    scroll-margin-top: 82px !important;
+}
+
+
+/* ============================================================
+   PROJECT HEADER
+   ============================================================ */
+
+#project-detail
+.project-detail-header {
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+
+    gap: 24px !important;
+
+    margin-bottom: 18px !important;
+
+    padding: 20px 22px !important;
+
+    background: #ffffff !important;
+
+    border: 1px solid #dfe6ee !important;
+    border-radius: 10px !important;
+
+    box-shadow:
+        0 2px 10px
+        rgba(15, 23, 42, 0.04) !important;
+}
+
+
+#project-detail
+.project-code {
+    display: block !important;
+
+    margin-bottom: 5px !important;
+
+    color: #2563eb !important;
+
+    font-size: 11px !important;
+    font-weight: 800 !important;
+
+    letter-spacing: 0.07em !important;
+
+    text-transform: uppercase;
+}
+
+
+#project-detail
+.project-detail-header h2 {
+    margin: 0 0 6px !important;
+
+    color: #0f172a !important;
+
+    font-size: 25px !important;
+    font-weight: 780 !important;
+
+    line-height: 1.15 !important;
+
+    letter-spacing: -0.025em !important;
+}
+
+
+#project-detail
+.project-detail-header p {
+    margin: 0 !important;
+
+    color: #64748b !important;
+
+    font-size: 13px !important;
+
+    line-height: 1.5 !important;
+}
+
+
+/* ============================================================
+   PROJECT STATUS
+   ============================================================ */
+
+#project-detail
+.project-status-display {
+    display: flex !important;
+
+    align-items: center !important;
+
+    gap: 8px !important;
+
+    flex-shrink: 0;
+}
+
+
+#project-detail
+.project-status-display > span:first-child {
+    color: #64748b !important;
+
+    font-size: 11px !important;
+
+    font-weight: 750 !important;
+
+    letter-spacing: 0.04em !important;
+
+    text-transform: uppercase;
+}
+
+
+/* ============================================================
+   PRIMARY PROJECT KPI GRID
+   ============================================================ */
+
+#project-detail
+.detail-grid {
+    display: grid !important;
+
+    grid-template-columns:
+        repeat(
+            3,
+            minmax(0, 1fr)
+        ) !important;
+
+    gap: 12px !important;
+
+    margin-bottom: 18px !important;
+}
+
+
+#project-detail
+.detail-card {
+    box-sizing: border-box !important;
+
+    min-width: 0 !important;
+    min-height: 102px !important;
+
+    padding: 16px !important;
+
+    background: #ffffff !important;
+
+    border: 1px solid #dfe6ee !important;
+
+    border-radius: 9px !important;
+
+    box-shadow:
+        0 1px 5px
+        rgba(15, 23, 42, 0.035) !important;
+}
+
+
+#project-detail
+.detail-card span {
+    display: block !important;
+
+    min-height: 0 !important;
+
+    margin: 0 0 9px !important;
+
+    color: #64748b !important;
+
+    font-size: 11px !important;
+    font-weight: 750 !important;
+
+    line-height: 1.25 !important;
+
+    letter-spacing: 0.03em !important;
+
+    text-transform: uppercase !important;
+}
+
+
+#project-detail
+.detail-card strong {
+    display: block !important;
+
+    margin: 0 !important;
+
+    overflow: visible !important;
+
+    color: #0f172a;
+
+    font-size: 21px !important;
+    font-weight: 800 !important;
+
+    line-height: 1.1 !important;
+
+    letter-spacing: -0.02em !important;
+
+    text-overflow: initial !important;
+}
+
+
+/* ============================================================
+   EXECUTIVE / MANAGEMENT INTELLIGENCE
+   ============================================================ */
+
+#project-detail
+.intelligence-section {
+    margin:
+        18px
+        0 !important;
+}
+
+
+#project-detail
+.intelligence-panel {
+    padding: 20px !important;
+
+    background: #ffffff !important;
+
+    border:
+        1px solid
+        #dfe6ee !important;
+
+    border-radius: 10px !important;
+
+    box-shadow:
+        0 2px 10px
+        rgba(15, 23, 42, 0.04) !important;
+}
+
+
+#project-detail
+.intelligence-header {
+    display: flex !important;
+
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+
+    gap: 22px !important;
+
+    margin-bottom: 16px !important;
+}
+
+
+#project-detail
+.intelligence-header h3 {
+    margin: 0 !important;
+
+    color: #0f172a !important;
+
+    font-size: 18px !important;
+    font-weight: 760 !important;
+
+    line-height: 1.25 !important;
+}
+
+
+#project-detail
+.intelligence-header p {
+    max-width: 700px !important;
+
+    margin: 5px 0 0 !important;
+
+    color: #64748b !important;
+
+    font-size: 12px !important;
+
+    line-height: 1.5 !important;
+}
+
+
+/* ============================================================
+   ATTENTION BADGE
+   ============================================================ */
+
+#project-detail
+.attention-badge {
+    min-width: 112px !important;
+
+    padding:
+        9px
+        11px !important;
+
+    border-radius: 8px !important;
+
+    text-align: center;
+}
+
+
+#project-detail
+.attention-badge span {
+    display: block !important;
+
+    font-size: 10px !important;
+    font-weight: 800 !important;
+
+    letter-spacing: 0.04em !important;
+
+    text-transform: uppercase !important;
+}
+
+
+#project-detail
+.attention-badge strong {
+    display: block !important;
+
+    margin-top: 3px !important;
+
+    font-size: 16px !important;
+    font-weight: 800 !important;
+}
+
+
+/* ============================================================
+   EXECUTIVE SUMMARY
+   ============================================================ */
+
+#project-detail
+.executive-summary {
+    display: flex !important;
+
+    align-items: flex-start !important;
+
+    gap: 12px !important;
+
+    margin-bottom: 14px !important;
+
+    padding:
+        13px
+        14px !important;
+
+    background: #f8fafc !important;
+
+    border:
+        1px solid
+        #e2e8f0 !important;
+
+    border-radius: 8px !important;
+}
+
+
+#project-detail
+.summary-icon {
+    display: flex !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    width: 30px !important;
+    height: 30px !important;
+
+    flex-shrink: 0 !important;
+
+    background: #eef2ff !important;
+
+    border-radius: 50% !important;
+
+    color: #2563eb !important;
+
+    font-size: 13px !important;
+    font-weight: 850 !important;
+}
+
+
+#project-detail
+.executive-summary p,
+#project-detail
+.executive-summary span {
+    font-size: 12px !important;
+
+    line-height: 1.5 !important;
+}
+
+
+/* ============================================================
+   PROJECT SUB-SECTIONS
+   COST / SCHEDULE / PROCUREMENT
+   ============================================================ */
+
+#project-detail
+#cost-performance,
+
+#project-detail
+#schedule-risk-panel,
+
+#project-detail
+#procurement-risk-panel {
+    margin-top: 18px !important;
+
+    padding: 20px !important;
+
+    background: #ffffff !important;
+
+    border:
+        1px solid
+        #dfe6ee !important;
+
+    border-radius: 10px !important;
+
+    box-shadow:
+        0 2px 10px
+        rgba(15, 23, 42, 0.04) !important;
+}
+
+
+/* ============================================================
+   SUB-SECTION TITLES
+   ============================================================ */
+
+#project-detail
+#cost-performance h3,
+
+#project-detail
+#schedule-risk-panel h3,
+
+#project-detail
+#procurement-risk-panel h3 {
+    margin:
+        0
+        0
+        5px !important;
+
+    color: #0f172a !important;
+
+    font-size: 18px !important;
+
+    font-weight: 760 !important;
+}
+
+
+#project-detail
+#cost-performance p,
+
+#project-detail
+#schedule-risk-panel p,
+
+#project-detail
+#procurement-risk-panel p {
+    color: #64748b !important;
+
+    font-size: 12px !important;
+
+    line-height: 1.5 !important;
+}
+
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+
+#project-detail table {
+    width: 100% !important;
+
+    font-size: 13px !important;
+}
+
+
+#project-detail th {
+    padding:
+        11px
+        12px !important;
+
+    background: #f8fafc !important;
+
+    color: #64748b !important;
+
+    font-size: 11px !important;
+    font-weight: 750 !important;
+}
+
+
+#project-detail td {
+    padding:
+        12px !important;
+
+    color: #334155 !important;
+
+    font-size: 12px !important;
+
+    line-height: 1.45 !important;
+}
+
+
+/* ============================================================
+   SMALL LABELS / SECONDARY METRICS
+   ============================================================ */
+
+#project-detail small {
+    font-size: 11px !important;
+
+    line-height: 1.4 !important;
+}
+
+
+#project-detail
+.metric-label,
+#project-detail
+.chart-label,
+#project-detail
+.driver-label {
+    font-size: 11px !important;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 1200px) {
+
+    #project-detail
+    .detail-grid {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            ) !important;
+    }
+
+}
+
+
+@media (max-width: 700px) {
+
+    #project-detail
+    .project-detail-header {
+        flex-direction: column !important;
+    }
+
+
+    #project-detail
+    .detail-grid {
+        grid-template-columns:
+            1fr !important;
+    }
+
+
+    #project-detail
+    .intelligence-header {
+        flex-direction: column !important;
+    }
+
+}
