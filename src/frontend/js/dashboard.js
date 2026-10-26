@@ -1291,7 +1291,9 @@ async function loadPortfolioAttention() {
 
         const data =
             await fetchJson(
-                `${API_BASE}/portfolio/attention-ranking`
+                periodAwareApiUrl(
+                    "portfolio/attention-ranking"
+                )
             );
 
 
@@ -1727,6 +1729,10 @@ async function loadPortfolioAttention() {
 
                         await loadProjectOverview(
                             projectCode
+                        );
+
+                        navigateToHash(
+                            "#project-detail"
                         );
 
                     }

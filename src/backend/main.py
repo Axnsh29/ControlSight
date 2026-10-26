@@ -689,6 +689,206 @@ def calculate_forecast_credibility(
     }
 
 
+
+# ============================================================
+# PERIOD-AWARE PROJECT SNAPSHOT
+# ============================================================
+
+def build_project_snapshot(
+    connection,
+    project_row,
+    reporting_period: Optional[str] = None,
+):
+
+    project = dict(
+        project_row
+    )
+
+
+    if reporting_period is None:
+
+        return project
+
+
+    project_code = (
+        project[
+            "project_code"
+        ]
+    )
+
+
+    cost = get_period_cost_snapshot(
+        connection,
+        project_code,
+        reporting_period,
+    )
+
+
+    if cost is None:
+
+        return None
+
+
+    progress = get_period_progress_snapshot(
+        connection,
+        project_code,
+        reporting_period,
+    )
+
+
+    budget = float(
+        project.get(
+            "approved_budget"
+        )
+        or 0
+    )
+
+
+    actual_cost = float(
+        cost.get(
+            "cumulative_actual_cost"
+        )
+        or 0
+    )
+
+
+    committed_cost = float(
+        cost.get(
+            "cumulative_committed_cost"
+        )
+        or 0
+    )
+
+
+    fac = float(
+        cost.get(
+            "forecast_at_completion"
+        )
+        or 0
+    )
+
+
+    forecast_variance = (
+        budget
+        -
+        fac
+    )
+
+
+    forecast_variance_pct = (
+        forecast_variance
+        /
+        budget
+        *
+        100
+        if budget > 0
+        else 0
+    )
+
+
+    project.update(
+        {
+            "actual_cost_to_date":
+                round(
+                    actual_cost,
+                    2,
+                ),
+
+            "committed_cost_to_date":
+                round(
+                    committed_cost,
+                    2,
+                ),
+
+            "forecast_at_completion":
+                round(
+                    fac,
+                    2,
+                ),
+
+            "forecast_variance":
+                round(
+                    forecast_variance,
+                    2,
+                ),
+
+            "forecast_variance_pct":
+                round(
+                    forecast_variance_pct,
+                    2,
+                ),
+
+            "reporting_period":
+                reporting_period,
+        }
+    )
+
+
+    if progress is not None:
+
+        planned_progress = float(
+            progress.get(
+                "planned_progress_pct"
+            )
+            or 0
+        )
+
+        actual_progress = float(
+            progress.get(
+                "actual_progress_pct"
+            )
+            or 0
+        )
+
+        progress_variance = (
+            actual_progress
+            -
+            planned_progress
+        )
+
+
+        project.update(
+            {
+                "planned_progress_pct":
+                    round(
+                        planned_progress,
+                        2,
+                    ),
+
+                "actual_progress_pct":
+                    round(
+                        actual_progress,
+                        2,
+                    ),
+
+                "progress_variance_pct":
+                    round(
+                        progress_variance,
+                        2,
+                    ),
+            }
+        )
+
+
+    project.update(
+        calculate_forecast_credibility(
+            project.get(
+                "actual_cost_to_date"
+            ),
+            project.get(
+                "actual_progress_pct"
+            ),
+            project.get(
+                "forecast_at_completion"
+            ),
+        )
+    )
+
+
+    return project
+
+
+
 # ============================================================
 # FRONTEND
 # ============================================================
@@ -736,37 +936,219 @@ app.mount(
 @app.get(
     "/api/kpis"
 )
-def get_portfolio_kpis():
+def get_portfolio_kpis(
+    reporting_period: Optional[str] = None,
+):
 
     try:
 
         with get_db_connection() as connection:
 
-            row = connection.execute(
+            validate_reporting_period(
+                connection,
+                reporting_period,
+            )
+
+
+            if reporting_period is None:
+
+                row = connection.execute(
+                    """
+                    SELECT *
+
+                    FROM report_portfolio_kpis
+
+                    LIMIT 1
+                    """
+                ).fetchone()
+
+
+                if row is None:
+
+                    raise HTTPException(
+                        status_code=404,
+                        detail=(
+                            "No portfolio KPI "
+                            "record found"
+                        ),
+                    )
+
+
+                return dict(
+                    row
+                )
+
+
+            rows = connection.execute(
                 """
                 SELECT *
 
-                FROM report_portfolio_kpis
+                FROM report_management_scorecard
 
-                LIMIT 1
+                ORDER BY project_code
                 """
-            ).fetchone()
+            ).fetchall()
 
 
-            if row is None:
+            snapshots = []
+
+            for row in rows:
+
+                snapshot = build_project_snapshot(
+                    connection,
+                    row,
+                    reporting_period,
+                )
+
+                if snapshot is not None:
+                    snapshots.append(
+                        snapshot
+                    )
+
+
+            if not snapshots:
 
                 raise HTTPException(
                     status_code=404,
                     detail=(
-                        "No portfolio KPI "
-                        "record found"
+                        "No project snapshots "
+                        f"found for {reporting_period}"
                     ),
                 )
 
 
-            return dict(
-                row
+            total_budget = sum(
+                float(
+                    project.get(
+                        "approved_budget"
+                    )
+                    or 0
+                )
+                for project in snapshots
             )
+
+            actual_cost = sum(
+                float(
+                    project.get(
+                        "actual_cost_to_date"
+                    )
+                    or 0
+                )
+                for project in snapshots
+            )
+
+            fac = sum(
+                float(
+                    project.get(
+                        "forecast_at_completion"
+                    )
+                    or 0
+                )
+                for project in snapshots
+            )
+
+            forecast_variance = (
+                total_budget
+                -
+                fac
+            )
+
+            forecast_variance_pct = (
+                forecast_variance
+                /
+                total_budget
+                *
+                100
+                if total_budget > 0
+                else 0
+            )
+
+            planned_values = [
+                float(
+                    project.get(
+                        "planned_progress_pct"
+                    )
+                    or 0
+                )
+                for project in snapshots
+            ]
+
+            actual_values = [
+                float(
+                    project.get(
+                        "actual_progress_pct"
+                    )
+                    or 0
+                )
+                for project in snapshots
+            ]
+
+            average_planned = (
+                sum(planned_values)
+                /
+                len(planned_values)
+            )
+
+            average_actual = (
+                sum(actual_values)
+                /
+                len(actual_values)
+            )
+
+            return {
+                "total_budget":
+                    round(
+                        total_budget,
+                        2,
+                    ),
+
+                "actual_cost_to_date":
+                    round(
+                        actual_cost,
+                        2,
+                    ),
+
+                "forecast_at_completion":
+                    round(
+                        fac,
+                        2,
+                    ),
+
+                "forecast_variance":
+                    round(
+                        forecast_variance,
+                        2,
+                    ),
+
+                "forecast_variance_pct":
+                    round(
+                        forecast_variance_pct,
+                        2,
+                    ),
+
+                "planned_progress_pct":
+                    round(
+                        average_planned,
+                        2,
+                    ),
+
+                "actual_progress_pct":
+                    round(
+                        average_actual,
+                        2,
+                    ),
+
+                "progress_variance_pct":
+                    round(
+                        average_actual
+                        -
+                        average_planned,
+                        2,
+                    ),
+
+                "reporting_period":
+                    reporting_period,
+            }
 
 
     except FileNotFoundError as error:
@@ -786,9 +1168,17 @@ def get_portfolio_kpis():
 @app.get(
     "/api/projects"
 )
-def get_projects():
+def get_projects(
+    reporting_period: Optional[str] = None,
+):
 
     with get_db_connection() as connection:
+
+        validate_reporting_period(
+            connection,
+            reporting_period,
+        )
+
 
         rows = connection.execute(
             """
@@ -801,10 +1191,32 @@ def get_projects():
         ).fetchall()
 
 
-        return [
-            dict(row)
-            for row in rows
-        ]
+        if reporting_period is None:
+
+            return [
+                dict(row)
+                for row in rows
+            ]
+
+
+        projects = []
+
+        for row in rows:
+
+            snapshot = build_project_snapshot(
+                connection,
+                row,
+                reporting_period,
+            )
+
+            if snapshot is not None:
+
+                projects.append(
+                    snapshot
+                )
+
+
+        return projects
 
 
 # ============================================================
@@ -3003,9 +3415,17 @@ def get_project_management_insights(
 @app.get(
     "/api/portfolio/attention-ranking"
 )
-def get_portfolio_attention_ranking():
+def get_portfolio_attention_ranking(
+    reporting_period: Optional[str] = None,
+):
 
     with get_db_connection() as connection:
+
+        validate_reporting_period(
+            connection,
+            reporting_period,
+        )
+
 
         project_rows = connection.execute(
             """
@@ -3023,9 +3443,15 @@ def get_portfolio_attention_ranking():
 
         for project_row in project_rows:
 
-            project = dict(
-                project_row
+            project = build_project_snapshot(
+                connection,
+                project_row,
+                reporting_period,
             )
+
+
+            if project is None:
+                continue
 
 
             project_code = (
