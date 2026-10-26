@@ -5022,7 +5022,8 @@ document.addEventListener(
 
                 const refreshTasks = [
                     loadPortfolioKPIs(),
-                    loadProjects()
+                    loadProjects(),
+                    loadPortfolioAttention()
                 ];
 
 
