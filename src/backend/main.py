@@ -2332,9 +2332,15 @@ def get_project_fac_movement(
 )
 def get_project_management_insights(
     project_code: str,
+    reporting_period: Optional[str] = None,
 ):
 
     with get_db_connection() as connection:
+
+        validate_reporting_period(
+            connection,
+            reporting_period,
+        )
 
         project_row = connection.execute(
             """
@@ -2362,9 +2368,23 @@ def get_project_management_insights(
             )
 
 
-        project = dict(
-            project_row
+        project = build_project_snapshot(
+            connection,
+            project_row,
+            reporting_period,
         )
+
+
+        if project is None:
+
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "No reporting snapshot for "
+                    f"{project_code} "
+                    f"in {reporting_period}"
+                ),
+            )
 
 
         schedule = connection.execute(
@@ -2948,6 +2968,9 @@ def get_project_management_insights(
 
             "project_code":
                 project_code,
+
+            "reporting_period":
+                reporting_period,
 
             "project_name":
                 project_name,

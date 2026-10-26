@@ -268,6 +268,28 @@ function getSelectedReportingPeriod() {
 }
 
 
+function periodAwareApiUrl(
+    endpoint
+) {
+
+    const period =
+        getSelectedReportingPeriod();
+
+    const baseUrl =
+        `${API_BASE}/${endpoint}`;
+
+    if (!period) {
+        return baseUrl;
+    }
+
+    return (
+        `${baseUrl}?reporting_period=` +
+        encodeURIComponent(period)
+    );
+}
+
+
+
 function projectApiUrl(
     projectCode,
     endpoint
@@ -1032,7 +1054,7 @@ async function loadPortfolioKPIs() {
 
         const data =
             await fetchJson(
-                `${API_BASE}/kpis`
+                periodAwareApiUrl("kpis")
             );
 
 
@@ -1751,7 +1773,7 @@ async function loadProjects() {
 
         const projects =
             await fetchJson(
-                `${API_BASE}/projects`
+                periodAwareApiUrl("projects")
             );
 
 
@@ -2747,7 +2769,10 @@ async function loadManagementInsights(
 
         const data =
             await fetchJson(
-                `${API_BASE}/projects/${projectCode}/management-insights`
+                projectApiUrl(
+                    projectCode,
+                    "management-insights"
+                )
             );
 
 
@@ -4989,13 +5014,29 @@ document.addEventListener(
             "change",
             async () => {
 
-                if (!selectedProjectCode) {
-                    return;
+                const refreshTasks = [
+                    loadPortfolioKPIs(),
+                    loadProjects()
+                ];
+
+
+                /*
+                 * Project Detail includes the historical
+                 * headline, Executive Intelligence,
+                 * cost chart and progress chart.
+                 */
+                if (selectedProjectCode) {
+
+                    refreshTasks.push(
+                        loadProjectOverview(
+                            selectedProjectCode
+                        )
+                    );
                 }
 
 
-                await loadProjectOverview(
-                    selectedProjectCode
+                await Promise.allSettled(
+                    refreshTasks
                 );
 
             }

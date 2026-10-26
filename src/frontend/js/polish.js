@@ -1912,9 +1912,23 @@ async function loadPortfolioExposure() {
 
     try {
 
+        const reportingPeriod =
+            controlSightReportingPeriod;
+
+        const projectsUrl =
+            reportingPeriod
+                ? (
+                    `${POLISH_API_BASE}/projects?reporting_period=` +
+                    encodeURIComponent(
+                        reportingPeriod
+                    )
+                )
+                : `${POLISH_API_BASE}/projects`;
+
+
         const response =
             await polishFetch(
-                `${POLISH_API_BASE}/projects`
+                projectsUrl
             );
 
         const projects =
@@ -2115,6 +2129,17 @@ async function loadPortfolioExposure() {
 /* ============================================================
    PORTFOLIO FORECAST CREDIBILITY
    ============================================================ */
+
+
+window.addEventListener(
+    "controlsight:reporting-period-changed",
+    () => {
+
+        loadPortfolioExposure();
+
+    }
+);
+
 
 async function getForecastCredibilityProjects() {
 
