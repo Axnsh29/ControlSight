@@ -1,144 +1,128 @@
-```markdown
 # ControlSight
 
 ### Project Controls Intelligence Platform
 
-ControlSight is an end-to-end project controls analytics application that transforms synthetic EPC-style cost, progress, schedule, procurement and data-quality records into management-ready intelligence.
-
-It combines a **Python ETL and validation pipeline, SQLite analytical model, FastAPI backend and native HTML/CSS/JavaScript dashboard** to demonstrate how project controls can be delivered through a custom API-driven web application rather than a conventional BI report.
-
 **Live Demo:** https://controlsight.onrender.com
 
-> All project, vendor, financial and operational data used in ControlSight is synthetic and fictional. No confidential company information is used.
+ControlSight is an end-to-end project controls application that transforms synthetic EPC-style cost, progress, schedule, procurement and data-quality information into management-ready intelligence.
 
----
-## Live Dashboard Preview
-
-### Portfolio Overview
-
-![ControlSight Portfolio Overview](docs/screenshots/portfolio-overview.png)
-
-### Project Detail
-
-![ControlSight Project Detail](docs/screenshots/project-detail.png)
-
-### Data Quality Control Centre
-
-![ControlSight Data Quality](docs/screenshots/data-quality.png)
-
----
-
-## Overview
-
-ControlSight was built to demonstrate the full analytical workflow from raw project-control data to management decision support.
+It was built as more than a dashboard. The project includes a complete analytical workflow:
 
 ```text
-Synthetic Project Data
+Synthetic EPC Data
         ↓
-Python ETL
+Python ETL & Validation
         ↓
-Validation & Quarantine
+Data Quality / Quarantine
         ↓
-Controlled SQLite Model
+SQLite Analytical Layer
         ↓
-FastAPI Analytics Layer
+FastAPI REST API
         ↓
-Rules-Based Management Logic
+Rules-Based Project Controls Logic
         ↓
-HTML / CSS / JavaScript Dashboard
+HTML / CSS / JavaScript Application
         ↓
-Management Decision Support
+Management Reporting & Decision Support
 ```
 
-The platform supports both portfolio-level monitoring and project-level drill-down across:
+The application demonstrates how project-controls information can be combined into a single management layer for portfolio monitoring, project drill-down, exception management and reporting.
 
-- cost performance
-- progress performance
+> All projects, vendors, costs, schedules and operational records used in ControlSight are synthetic and fictional.
+
+---
+
+## What ControlSight Does
+
+ControlSight provides portfolio and project-level visibility across:
+
+- approved budget
+- actual and committed cost
+- forecast at completion
+- forecast variance
+- planned and actual progress
 - schedule risk
 - procurement risk
 - data quality
-- management attention
+- change control
+- risk and contingency
+- cash-flow planning
+- management actions
+- project prioritisation
+- historical reporting periods
 
-The objective was not simply to build a visual dashboard, but to create a small end-to-end analytical system where calculations, controls, data-quality logic and reporting can be traced through the architecture.
-
----
-
-## Business Problem
-
-Large engineering and construction projects generate information across multiple operational areas, including:
-
-- approved budgets
-- actual costs
-- commitments
-- forecasts
-- planned and actual progress
-- schedule activities
-- procurement packages
-- vendor performance
-- data-quality exceptions
-
-The challenge is therefore not just visualisation.
-
-A useful project-controls solution must also:
-
-1. validate incoming data;
-2. isolate structurally invalid records;
-3. preserve suspicious but plausible observations for investigation;
-4. create consistent reporting structures;
-5. calculate reliable KPIs;
-6. identify emerging project risks;
-7. prioritise projects requiring management attention; and
-8. present the results through a clear management interface.
-
-ControlSight demonstrates this process from end to end.
+The system supports both executive portfolio monitoring and detailed project investigation.
 
 ---
 
-## Core Capabilities
+## Key Features
 
-### Portfolio Overview
+### 1. Portfolio Overview
 
-The executive portfolio view provides consolidated indicators including:
+The portfolio dashboard consolidates project-control information into management KPIs including:
 
 - total approved budget
 - actual cost to date
-- committed cost
 - forecast at completion
 - forecast variance
-- planned portfolio progress
-- actual portfolio progress
-- progress variance
-- validation pass rate
+- portfolio progress
+- validation quality
+- project status
+- management-priority ranking
 
-Portfolio progress is budget-weighted so that larger projects contribute proportionally to the overall portfolio result.
+Users can change the active reporting period and the portfolio KPIs, exposure views, project metrics and Management Attention results update to the selected month.
 
 ---
 
-### Project Portfolio
+### 2. Project Detail
 
-The project portfolio provides project-level comparison across:
+Selecting a project opens a detailed controls view containing:
 
 - approved budget
 - actual cost
-- forecast at completion
+- committed cost
+- FAC
 - forecast variance
+- planned progress
 - actual progress
 - progress variance
-- performance status
+- cumulative cost trend
+- progress S-curve
+- schedule-risk detail
+- procurement-risk detail
+- forecast movement
+- management insights
+- workflow actions
 
-Projects can be searched and filtered using Green, Amber and Red performance status.
-
-Performance status represents the headline cost and progress position of each project.
+This provides a direct path from portfolio-level exception identification to the underlying project drivers.
 
 ---
 
-### Management Attention Index
+### 3. Historical Reporting
 
-ControlSight includes a transparent rules-based **Management Attention Index**.
+ControlSight supports reporting-period selection rather than only displaying the latest snapshot.
 
-The score is designed to prioritise projects requiring management review across five control dimensions:
+Historical selection updates:
 
-| Dimension | Maximum Score |
+- portfolio KPIs
+- project portfolio values
+- cost exposure
+- project headline metrics
+- cost and progress charts
+- FAC movement
+- Executive Intelligence
+- Management Attention cost and progress inputs
+- report packs
+
+This allows management information to be reviewed as it would have appeared at a selected reporting date.
+
+---
+
+## Management Attention Index
+
+ControlSight includes a transparent rules-based **Management Attention Index** that ranks projects requiring management review.
+
+| Component | Maximum |
 |---|---:|
 | Cost | 30 |
 | Progress | 25 |
@@ -147,65 +131,61 @@ The score is designed to prioritise projects requiring management review across 
 | Data Quality | 5 |
 | **Total** | **100** |
 
-The score is a **management prioritisation mechanism**, not a statistical probability of project failure.
+The score is a prioritisation mechanism, not a probability of project failure.
 
-This separates two related but distinct concepts:
+It combines multiple dimensions so that a project is not assessed only through headline cost variance.
 
-**Performance Status**  
-Headline cost and progress position.
+Typical outputs include:
 
-**Management Attention**  
-Broader exception severity incorporating cost, progress, critical schedule delays, procurement exposure and data-quality issues.
+- Critical
+- Watch
+- Review
+- Stable
 
-Small cost and progress movements use a deadband so immaterial deviations do not automatically increase the attention score.
-
----
-
-## Project-Level Intelligence
-
-Selecting a project opens a detailed project-controls view containing:
-
-- approved budget
-- actual cost
-- committed cost
-- forecast at completion
-- forecast variance
-- planned progress
-- actual progress
-- progress variance
-- delayed activities
-- critical schedule delays
-- procurement exposure
-- automated management insights
-- cumulative cost trend
-- progress S-curve
-- schedule-risk detail
-- procurement-risk detail
-
-This allows users to move from portfolio-level prioritisation into the underlying project-control drivers.
+The dashboard also identifies the primary driver behind each project's score.
 
 ---
 
-## Cost Control Methodology
+## Forecast Concern
 
-Cost reporting distinguishes between **period movements** and **forecast snapshots**.
+ControlSight includes a secondary forecast cross-check called **Forecast Concern**.
 
-Actual and planned costs are treated as period flows and accumulated through time.
-
-Forecast at Completion is treated as a reporting-date snapshot rather than summed across historical periods.
-
-Forecast variance is defined as:
+The calculation compares reported FAC with a simple progress-implied completion-cost proxy:
 
 ```text
-Forecast Variance = Approved Budget - Forecast at Completion
+Progress-Implied EAC
+=
+Actual Cost to Date
+÷
+Actual Progress %
+```
+
+The difference between the progress-implied EAC and reported FAC is surfaced as a management concern indicator.
+
+This is intentionally treated as a cross-check only.
+
+It is **not formal Earned Value Management** and does not replace the reported FAC.
+
+---
+
+## Cost Control Logic
+
+Forecast variance is calculated as:
+
+```text
+Forecast Variance
+=
+Approved Budget
+-
+Forecast at Completion
 ```
 
 Therefore:
 
-- a negative value indicates forecast overrun
-- a positive value indicates forecast saving
+- negative variance = forecast overrun
+- positive variance = forecast saving
 
-ControlSight also applies a forecast control layer so that, within the synthetic model:
+The synthetic analytical model also applies the following control:
 
 ```text
 Final FAC = max(
@@ -215,125 +195,103 @@ Final FAC = max(
 )
 ```
 
-This prevents a reporting snapshot from showing forecast completion cost below incurred or committed expenditure.
-
-The source forecast remains the primary FAC where it is already valid.
-
-The application deliberately does not estimate FAC from physical progress because that would require a formal earned-value methodology.
+This prevents a reporting snapshot from showing a forecast completion value below incurred or committed expenditure.
 
 ---
 
-## Progress Methodology
+## Progress Control
 
-Progress performance compares planned and actual completion over time.
-
-Progress variance is calculated as:
+Progress variance is reported in percentage points:
 
 ```text
-Progress Variance =
-Actual Progress - Planned Progress
+Progress Variance
+=
+Actual Progress
+-
+Planned Progress
 ```
-
-Because this is the difference between two percentages, the result is reported in **percentage points (pp)**.
 
 Example:
 
 ```text
-Planned Progress = 79.2%
-Actual Progress  = 72.0%
+Planned Progress: 86.4%
+Actual Progress:  73.5%
 
-Progress Variance = -7.2 pp
+Progress Variance: -12.9 pp
 ```
 
-A negative value indicates progress behind plan.
+A negative result indicates that the project is behind plan.
 
 ---
 
-## Portfolio Progress
+## Executive Intelligence
 
-Portfolio progress is weighted using approved project budget:
+Project-level Executive Intelligence converts deterministic project-control rules into concise management commentary.
 
-```text
-                     Σ(Project Progress × Approved Budget)
-Portfolio Progress = ─────────────────────────────────────
-                              Σ Approved Budget
-```
+It evaluates areas such as:
 
-This prevents small and large projects from contributing equally to the overall portfolio measure.
+- cost overrun
+- progress slippage
+- schedule exposure
+- procurement delay
+- data-quality exceptions
 
-Current synthetic portfolio values are:
-
-```text
-Weighted Planned Progress: 78.33%
-Weighted Actual Progress:  73.71%
-Progress Variance:         -4.62 pp
-```
+The feature is deliberately rules-based and explainable rather than presented as generative AI.
 
 ---
 
-## Schedule Risk
+## Workflow & Action Management
 
-Schedule analytics identify:
+ControlSight includes a persistent workflow layer for project actions.
 
-- total activities
-- critical activities
-- delayed activities
-- critical delayed activities
-- activity completion
-- delay duration
+Users can:
 
-Critical-path delays are surfaced separately because they can represent a materially different management risk from non-critical delays.
+- create management actions
+- assign priority
+- set status
+- record ownership
+- retain actions by reporting period
+- update progress
+- close or hold actions
+
+This moves the application beyond passive reporting into basic management follow-up.
 
 ---
 
-## Procurement Risk
+## Data Upload & Validation
 
-Procurement analytics monitor:
+The application includes staging CSV uploads for:
 
-- procurement packages
-- delayed deliveries
-- critical delivery delays
-- average delivery delay
-- delayed package value
-- vendor information
+- cost
+- progress
+- schedule
+- procurement
 
-This allows procurement exposure to be considered alongside cost, progress and schedule performance.
+Uploaded files are validated before acceptance.
+
+The staging process records:
+
+- source rows
+- accepted rows
+- quarantined rows
+- validation issues
+- audit metadata
+
+Invalid test records are quarantined rather than silently entering the analytical model.
+
+The upload layer is intentionally isolated from the production analytical database.
 
 ---
 
 ## Data Quality & Governance
 
-ControlSight treats data quality as part of project controls rather than silently cleaning problematic records.
+ControlSight treats data quality as a project-control issue rather than hiding errors during transformation.
 
-The validation workflow is:
+The core principle is:
 
-```text
-Source Data
-    ↓
-Validation
-    ↓
-Quarantine / Exception Handling
-    ↓
-Controlled Analytical Reporting
-```
+> Invalid records are isolated. Suspicious but plausible observations are retained, flagged and investigated.
 
-Structurally invalid records are excluded from the analytical reporting layer.
-
-Plausible but suspicious observations may instead be retained and explicitly flagged for investigation.
-
-The principle is:
-
-> **Invalid records are isolated. Suspicious but plausible records are retained, flagged and investigated.**
-
-This preserves auditability while preventing known invalid records from contaminating management reporting.
-
----
-
-## Validation Transparency
-
-The dashboard exposes the validation denominator directly.
-
-Current synthetic dataset:
+Current synthetic validation metrics include:
 
 ```text
 Source Records:       2,415
@@ -343,380 +301,254 @@ Issue Events:            13
 Validation Pass Rate: 99.59%
 ```
 
-Validation pass rate is calculated as:
-
-```text
-                       Accepted Analytical Records
-Validation Pass Rate = ─────────────────────────── × 100
-                         Source Records Evaluated
-```
-
-For the current dataset:
-
-```text
-2,405 ÷ 2,415 × 100 = 99.59%
-```
-
-Issue events are reported separately because one source row can generate more than one validation observation.
-
-Therefore:
-
-```text
-Issue Events ≠ Quarantined Rows
-```
-
-This distinction prevents logged issues from being incorrectly treated as rejected-record counts.
+Issue events and quarantined rows are reported separately because one source row can generate multiple validation observations.
 
 ---
 
-## Data Quality Control Centre
+## Change Control
 
-The dashboard includes a dedicated data-quality view containing:
+A dedicated change-control layer tracks project budget movement.
 
-- source-record totals
-- accepted-record totals
-- quarantined-record totals
-- validation pass rate
-- issue-event totals
-- validation register
-- source row references
-- affected fields
-- source values
-- validation messages
+The model distinguishes between:
 
-Example issue types include:
+- original budget
+- approved changes
+- pending changes
+- current budget
+- potential budget
 
-- missing values
-- invalid values
-- duplicate records
-- invalid references
-- invalid formats
-- logical errors
-- statistical or business-rule anomalies
+Conceptually:
 
-All logged validation events remain visible in the register.
+```text
+Current Budget
+=
+Original Budget
++
+Approved Changes
+```
 
----
+and:
 
-## Anomaly Handling
+```text
+Potential Budget
+=
+Current Budget
++
+Pending Changes
+```
 
-ControlSight does not automatically delete every unusual observation.
-
-For example, a cost observation that is structurally valid but materially exceeds its planned value can remain in the analytical dataset while receiving an anomaly flag.
-
-This allows management reporting to expose the issue rather than hiding it.
-
-The project intentionally retains one cost anomaly to demonstrate this behaviour.
+This gives management a clearer view of approved versus potential commercial exposure.
 
 ---
 
-## Automated Management Insights
+## Risk, Contingency & Cash Flow
 
-Project-level management insights are generated using deterministic project-control rules.
+ControlSight also includes project-level controls for:
 
-The logic evaluates indicators such as:
+- contingency baseline
+- risk drawdown
+- contingency position
+- cash-flow periods
+- planned cash flow
+- actual cash flow
 
-- forecast cost overrun
-- progress slippage
-- critical schedule delays
-- procurement delays
-- data-quality anomalies
+Cash-flow information is kept separate from cost/FAC reporting to avoid mixing different control concepts.
 
-The feature is intentionally described as **rules-based exception analytics**, not artificial intelligence.
+Where information has not been configured, the UI displays **Not configured** rather than treating missing data as zero.
 
-This keeps the methodology explainable and auditable.
+---
+
+## Report Packs
+
+ControlSight generates project report packs in:
+
+- PDF
+- Excel
+
+Report packs follow the selected reporting period and contain project-control metrics such as:
+
+- budget
+- actual cost
+- committed cost
+- FAC
+- forecast variance
+- planned progress
+- actual progress
+- progress variance
+- Forecast Concern
+
+Historical report packs have been checked to ensure prior-period values are not replaced by the latest snapshot.
 
 ---
 
 ## Architecture
 
-![ControlSight Architecture](docs/screenshots/architecture.png)
-
 ```text
-┌──────────────────────────────┐
-│ Synthetic EPC-Style Data     │
-│ Cost / Progress / Schedule   │
-│ Procurement / Vendors        │
-└───────────────┬──────────────┘
+┌───────────────────────────────┐
+│ Synthetic EPC-Style Data      │
+│ Cost / Progress / Schedule    │
+│ Procurement / Vendors         │
+└───────────────┬───────────────┘
                 │
                 ▼
-┌──────────────────────────────┐
-│ Python ETL & Validation      │
-│ Cleaning / Rules / Audit     │
-│ Quarantine / Issue Logging   │
-└───────────────┬──────────────┘
+┌───────────────────────────────┐
+│ Python ETL & Validation       │
+│ Rules / Quarantine / Audit    │
+└───────────────┬───────────────┘
                 │
                 ▼
-┌──────────────────────────────┐
-│ SQLite Analytical Layer      │
-│ Controlled Reporting Tables  │
-│ Derived Metrics              │
-└───────────────┬──────────────┘
+┌───────────────────────────────┐
+│ SQLite Analytical Layer       │
+│ Reporting Tables & Metrics    │
+└───────────────┬───────────────┘
                 │
                 ▼
-┌──────────────────────────────┐
-│ FastAPI Backend              │
-│ REST Endpoints               │
-│ Business Logic               │
-│ Attention Scoring            │
-└───────────────┬──────────────┘
+┌───────────────────────────────┐
+│ FastAPI Backend               │
+│ APIs / Business Rules         │
+│ Workflow / Reporting          │
+└───────────────┬───────────────┘
                 │
                 ▼
-┌──────────────────────────────┐
-│ Native Web Frontend          │
-│ HTML / CSS / JavaScript      │
-│ SVG Visualisations           │
-└───────────────┬──────────────┘
+┌───────────────────────────────┐
+│ Native Web Application        │
+│ HTML / CSS / JavaScript       │
+└───────────────┬───────────────┘
                 │
                 ▼
-┌──────────────────────────────┐
-│ Management Intelligence      │
-│ Portfolio → Project Drilldown│
-└──────────────────────────────┘
+┌───────────────────────────────┐
+│ Management Intelligence       │
+│ Portfolio → Project → Action  │
+└───────────────────────────────┘
 ```
-
-The architecture separates source data, transformation logic, analytical storage, API delivery and presentation.
-
-This allows business logic to remain independent from the user interface.
 
 ---
 
 ## Technology Stack
 
-### Data & Analytics
-
+**Data & Analytics**
 - Python
 - pandas
 - SQL
 - SQLite
-- Jupyter
 
-### Backend
-
+**Backend**
 - FastAPI
+- REST APIs
 - Python
-- REST API architecture
 
-### Frontend
-
+**Frontend**
 - HTML5
 - CSS3
 - JavaScript
-- Native SVG visualisations
+- SVG-based visualisations
 
-### Engineering & QA
+**Reporting**
+- PDF report generation
+- Excel report generation
 
-- Git
-- deterministic data validation
-- analytical regression checks
-- data-quality exception logging
-- relational analytical modelling
-- cloud deployment with Render
-
----
-
-## API Layer
-
-The FastAPI backend exposes analytical information to the frontend through REST endpoints.
-
-Key endpoints include:
-
-```text
-/api/kpis
-/api/projects
-/api/data-quality
-/api/cost-anomalies
-
-/api/projects/{project_code}/overview
-/api/projects/{project_code}/cost-trend
-/api/projects/{project_code}/progress-trend
-/api/projects/{project_code}/schedule-risk
-/api/projects/{project_code}/procurement-risk
-/api/projects/{project_code}/management-insights
-
-/api/portfolio/attention-ranking
-```
-
-Interactive FastAPI documentation is also available when the application is running.
+**Engineering**
+- Git / GitHub
+- automated regression testing
+- data-validation checks
+- API smoke tests
+- Render deployment
 
 ---
 
 ## Quality Assurance
 
-ControlSight includes analytical QA and regression checks designed to reconcile reporting outputs against underlying data.
+ControlSight includes an automated regression suite covering key API and analytical functionality.
 
-The QA process checks areas including:
+The project has also been manually tested across:
 
-- portfolio budget reconciliation
-- actual-cost reconciliation
-- committed-cost reconciliation
-- FAC reconciliation
-- forecast variance
-- project-level KPIs
-- weighted portfolio progress
-- validation pass rate
-- schedule indicators
-- procurement indicators
-- retained anomaly detection
+- historical reporting periods
+- project drill-down
+- portfolio KPI reconciliation
+- Management Attention
+- Executive Intelligence
+- CSV validation
+- action persistence
+- PDF report generation
+- Excel report generation
+- deployment behaviour
 
-A deliberately retained cost anomaly is treated as a warning rather than silently removed.
-
----
-
-## Repository Structure
-
-```text
-ControlSight/
-│
-├── data/
-│   ├── raw/
-│   ├── processed/
-│   └── database/
-│
-├── docs/
-│   └── data_dictionary.md
-│
-├── src/
-│   │
-│   ├── analytics/
-│   │   ├── metrics.ipynb
-│   │   └── qa_checks.py
-│   │
-│   ├── backend/
-│   │   ├── build_database.py
-│   │   └── main.py
-│   │
-│   ├── data_generation/
-│   │   └── generate_raw_data.ipynb
-│   │
-│   ├── etl/
-│   │   └── clean_data.ipynb
-│   │
-│   └── frontend/
-│       ├── index.html
-│       ├── css/
-│       │   ├── styles.css
-│       │   └── polish.css
-│       └── js/
-│           ├── dashboard.js
-│           └── polish.js
-│
-├── .gitignore
-├── README.md
-├── render.yaml
-└── requirements.txt
-```
-
----
-
-## Running ControlSight Locally
-
-Clone the repository and move into the project directory.
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Build the analytical database:
-
-```bash
-python src/backend/build_database.py \
-  --output data/database/controlsight.db
-```
-
-Start the FastAPI server:
-
-```bash
-python -m uvicorn src.backend.main:app --reload
-```
-
-Open the dashboard:
-
-```text
-http://127.0.0.1:8000
-```
-
-Interactive API documentation:
-
-```text
-http://127.0.0.1:8000/docs
-```
+The final desktop reporting paths were checked for internal consistency across portfolio, attention, project detail and report outputs.
 
 ---
 
 ## Deployment
 
-ControlSight is deployed using Render.
-
-The production deployment rebuilds the analytical database during the build stage and then launches the FastAPI application using Uvicorn.
+ControlSight is deployed on Render.
 
 **Live Application**
 
 https://controlsight.onrender.com
 
-The free hosting instance may take a short time to start after a period of inactivity.
+The free hosting instance may require a short cold start after inactivity.
 
 ---
 
-## Why a Custom Web Dashboard?
+## What ControlSight Is — and Is Not
 
-ControlSight is not intended to demonstrate that HTML dashboards are universally better than traditional BI platforms.
+ControlSight is a focused project-controls and reporting application.
 
-Instead, it demonstrates where a custom analytics application can provide additional flexibility.
+It is **not** intended to replace:
 
-A native web application can support:
+- enterprise ERP platforms
+- Primavera
+- SAP
+- Oracle
+- Procore
+- InEight
+- Power BI
 
-- custom user experience
-- API-driven integration
-- bespoke project-control workflows
-- transparent business rules
-- custom drill-down behaviour
-- application-level validation
-- tailored management prioritisation
-- integration with operational systems
-- complete control over analytical delivery
+A realistic enterprise architecture would place ControlSight as an analytical and management layer above operational source systems:
 
-Traditional BI platforms remain highly appropriate for many reporting requirements.
+```text
+ERP / Primavera / Procurement Systems
+                ↓
+ControlSight Integration & Validation
+                ↓
+Unified Controls Analytics
+                ↓
+Management Reporting & Exceptions
+```
 
-ControlSight demonstrates the additional flexibility available when analytics are delivered as an application rather than only as a report.
+The purpose of the project is to demonstrate how project controls, analytics, data engineering and software delivery can be connected into one traceable application.
 
 ---
 
 ## Project Objective
 
-ControlSight was developed as a portfolio project to demonstrate the ability to connect:
+ControlSight was built to demonstrate capability across:
 
-**project controls + business understanding + data engineering + analytics + backend development + frontend delivery**
+**project controls + cost analysis + data engineering + analytics + backend development + frontend delivery + management reporting**
 
-The goal was to create a small but complete analytical system in which:
+The main goal was not to create charts.
+
+It was to build the full path from:
 
 ```text
-Source Data
-     ↓
+Raw Data
+   ↓
 Validation
-     ↓
-Transformation
-     ↓
+   ↓
 Analytical Model
-     ↓
-Business Logic
-     ↓
+   ↓
+Business Rules
+   ↓
 API
-     ↓
-Management Interface
-     ↓
-Decision Support
+   ↓
+User Interface
+   ↓
+Management Action
 ```
-
-can be traced from end to end.
 
 ---
 
 ## Disclaimer
 
-All project names, financial values, schedules, procurement records, vendors and operational observations used in ControlSight are **synthetic and fictional**.
+All project names, financial values, vendors, schedules, procurement records and operational observations used in ControlSight are synthetic and fictional.
 
-The dataset was created solely for software, analytics and portfolio demonstration purposes.
-```
+No confidential company or client information is used.
