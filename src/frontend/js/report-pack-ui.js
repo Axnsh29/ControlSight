@@ -1251,6 +1251,36 @@ async function loadReportPackProjects() {
             .join("");
 
 
+    const sharedProject =
+        sessionStorage.getItem(
+            "controlsight:selected-project"
+        );
+
+
+    const projectCodes =
+        projects.map(
+            project =>
+                project.project_code
+                ||
+                project.code
+        );
+
+
+    if (
+        !reportPackSelectedProject
+        &&
+        sharedProject
+        &&
+        projectCodes.includes(
+            sharedProject
+        )
+    ) {
+
+        reportPackSelectedProject =
+            sharedProject;
+    }
+
+
     if (
         !reportPackSelectedProject
         &&
@@ -1276,6 +1306,167 @@ async function loadReportPackProjects() {
 }
 
 
+
+/* ============================================================
+   GLOBAL REPORTING PERIOD SYNC
+   ============================================================ */
+
+function rpNormalisePeriod(
+    value
+) {
+
+    const raw =
+        String(
+            value || ""
+        ).trim();
+
+
+    if (!raw) {
+        return "";
+    }
+
+
+    /*
+    Already in backend format:
+    YYYY-MM
+    */
+    if (
+        /^\d{4}-(0[1-9]|1[0-2])$/
+            .test(raw)
+    ) {
+        return raw;
+    }
+
+
+    /*
+    Display format:
+    September 2026
+    */
+    const parsed =
+        new Date(
+            `1 ${raw}`
+        );
+
+
+    if (
+        !Number.isNaN(
+            parsed.getTime()
+        )
+    ) {
+
+        const year =
+            parsed.getFullYear();
+
+        const month =
+            String(
+                parsed.getMonth() + 1
+            ).padStart(
+                2,
+                "0"
+            );
+
+
+        return `${year}-${month}`;
+    }
+
+
+    return "";
+}
+
+
+function rpGetGlobalPeriodSelect() {
+
+    return document.querySelector(
+        "#reporting-period-control select"
+    );
+}
+
+
+function rpGetGlobalReportingPeriod() {
+
+    const select =
+        rpGetGlobalPeriodSelect();
+
+
+    return rpNormalisePeriod(
+        select?.value
+        ||
+        select?.selectedOptions?.[0]
+            ?.textContent
+        ||
+        ""
+    );
+}
+
+
+function rpGetGlobalReportingPeriods() {
+
+    const select =
+        rpGetGlobalPeriodSelect();
+
+
+    if (!select) {
+        return [];
+    }
+
+
+    return Array.from(
+        select.options || []
+    )
+        .map(option =>
+            rpNormalisePeriod(
+                option.value
+                ||
+                option.textContent
+                ||
+                ""
+            )
+        )
+        .filter(Boolean);
+}
+
+
+function rpFormatPeriodLabel(
+    period
+) {
+
+    const match =
+        String(period || "")
+            .match(
+                /^(\d{4})-(\d{2})$/
+            );
+
+
+    if (!match) {
+        return period;
+    }
+
+
+    const year =
+        Number(match[1]);
+
+    const month =
+        Number(match[2]);
+
+
+    const date =
+        new Date(
+            year,
+            month - 1,
+            1
+        );
+
+
+    return new Intl.DateTimeFormat(
+        "en-GB",
+        {
+            month: "long",
+            year: "numeric"
+        }
+    ).format(date);
+}
+
+
 /* ============================================================
    LOAD PERIODS
    ============================================================ */
@@ -1288,53 +1479,69 @@ async function loadReportPackPeriods() {
         );
 
 
-    let periods = [];
-
-
-    try {
-
-        const data =
-            await rpFetchJson(
-                REPORT_PACK_PERIODS_API
-            );
-
-
-        if (
-            Array.isArray(data)
-        ) {
-
-            periods =
-                data;
-
-        } else if (
-            Array.isArray(
-                data.reporting_periods
-            )
-        ) {
-
-            periods =
-                data.reporting_periods;
-
-        } else if (
-            Array.isArray(
-                data.periods
-            )
-        ) {
-
-            periods =
-                data.periods;
-        }
-
-    } catch {
-
-        periods = [];
+    if (!select) {
+        return;
     }
 
 
-    periods =
-        periods
-            .map(
-                item => {
+    let periods =
+        rpGetGlobalReportingPeriods();
+
+
+    const globalPeriod =
+        rpGetGlobalReportingPeriod();
+
+
+    /*
+    PRIMARY SOURCE:
+    use the same reporting periods already exposed
+    by the global ControlSight reporting selector.
+    */
+
+    if (!periods.length) {
+
+        try {
+
+            const data =
+                await rpFetchJson(
+                    REPORT_PACK_PERIODS_API
+                );
+
+
+            if (
+                Array.isArray(data)
+            ) {
+
+                periods = data;
+
+            } else if (
+                Array.isArray(
+                    data.reporting_periods
+                )
+            ) {
+
+                periods =
+                    data.reporting_periods;
+
+            } else if (
+                Array.isArray(
+                    data.periods
+                )
+            ) {
+
+                periods =
+                    data.periods;
+            }
+
+        } catch {
+
+            periods = [];
+        }
+
+
+        periods =
+            periods
+                .map(item => {
 
                     if (
                         typeof item ===
@@ -1343,6 +1550,7 @@ async function loadReportPackPeriods() {
                         return item;
                     }
 
+
                     return (
                         item.reporting_period
                         ||
@@ -1350,34 +1558,62 @@ async function loadReportPackPeriods() {
                         ||
                         item.value
                     );
-                }
-            )
-            .filter(Boolean);
+                })
+                .filter(Boolean);
+    }
 
 
     periods =
         [
             ...new Set(
                 periods
+                    .map(period =>
+                        rpNormalisePeriod(
+                            period
+                        )
+                    )
+                    .filter(Boolean)
             )
         ]
         .sort()
         .reverse();
 
 
-    if (
-        !periods.length
-    ) {
+    /*
+    Never invent the current calendar month.
+    If no controlled reporting periods exist,
+    make the state explicit.
+    */
 
-        const now =
-            new Date();
+    if (!periods.length) {
 
-        periods = [
-            `${now.getFullYear()}-${String(
-                now.getMonth() + 1
-            ).padStart(2, "0")}`
-        ];
+        reportPackSelectedPeriod =
+            null;
+
+
+        select.innerHTML = `
+            <option value="">
+                No reporting periods available
+            </option>
+        `;
+
+
+        select.disabled =
+            true;
+
+
+        setReportPackFeedback(
+            "No controlled reporting periods are available for report generation.",
+            "error"
+        );
+
+
+        return;
     }
+
+
+    select.disabled =
+        false;
 
 
     select.innerHTML =
@@ -1391,7 +1627,9 @@ async function loadReportPackPeriods() {
                         )}"
                     >
                         ${rpEscape(
-                            period
+                            rpFormatPeriodLabel(
+                                period
+                            )
                         )}
                     </option>
                 `
@@ -1399,31 +1637,95 @@ async function loadReportPackPeriods() {
             .join("");
 
 
-    if (
-        !reportPackSelectedPeriod
-    ) {
-
-        reportPackSelectedPeriod =
-            periods[0];
-    }
-
+    /*
+    Prefer the active global reporting period.
+    */
 
     if (
+        globalPeriod
+        &&
         periods.includes(
-            reportPackSelectedPeriod
+            globalPeriod
         )
     ) {
 
-        select.value =
-            reportPackSelectedPeriod;
-
-    } else {
-
         reportPackSelectedPeriod =
-            periods[0];
+            globalPeriod;
+
 
         select.value =
-            reportPackSelectedPeriod;
+            globalPeriod;
+
+
+        return;
+    }
+
+
+    /*
+    If the requested global period is unavailable,
+    use the nearest earlier controlled reporting period.
+    */
+
+    if (globalPeriod) {
+
+        const earlierPeriod =
+            periods.find(
+                period =>
+                    period <=
+                    globalPeriod
+            );
+
+
+        if (earlierPeriod) {
+
+            reportPackSelectedPeriod =
+                earlierPeriod;
+
+
+            select.value =
+                earlierPeriod;
+
+
+            setReportPackFeedback(
+                `Requested ${rpFormatPeriodLabel(
+                    globalPeriod
+                )} is unavailable for the report pack. ` +
+                `Using latest available period: ${rpFormatPeriodLabel(
+                    earlierPeriod
+                )}.`,
+                "info"
+            );
+
+
+            return;
+        }
+    }
+
+
+    /*
+    Final controlled fallback:
+    latest available reporting period.
+    */
+
+    reportPackSelectedPeriod =
+        periods[0];
+
+
+    select.value =
+        reportPackSelectedPeriod;
+
+
+    if (globalPeriod) {
+
+        setReportPackFeedback(
+            `Requested ${rpFormatPeriodLabel(
+                globalPeriod
+            )} is unavailable for the report pack. ` +
+            `Using ${rpFormatPeriodLabel(
+                reportPackSelectedPeriod
+            )}.`,
+            "info"
+        );
     }
 }
 
@@ -1668,7 +1970,7 @@ function renderReportPackPreview(
             <div class="rp-card">
 
                 <span>
-                    Forecast Credibility
+                    Forecast Concern
                 </span>
 
                 <strong>
@@ -1896,7 +2198,7 @@ function renderReportPackPreview(
             <div class="rp-mini-panel">
 
                 <h4>
-                    Forecast Cross-Check
+                    Forecast Review
                 </h4>
 
                 ${rpMetric(
@@ -1908,7 +2210,7 @@ function renderReportPackPreview(
                 )}
 
                 ${rpMetric(
-                    "Credibility Gap",
+                    "Forecast Gap",
                     rpMoney(
                         performance
                             .forecast_credibility_gap
@@ -1916,7 +2218,7 @@ function renderReportPackPreview(
                 )}
 
                 ${rpMetric(
-                    "Credibility Gap %",
+                    "Forecast Gap %",
                     rpPercent(
                         performance
                             .forecast_credibility_gap_pct
@@ -2267,6 +2569,42 @@ function clearReportPackFeedback() {
 
 function initialiseReportPackEvents() {
 
+    const globalPeriodSelect =
+        rpGetGlobalPeriodSelect();
+
+
+    globalPeriodSelect
+        ?.addEventListener(
+            "change",
+            async event => {
+
+                const requestedPeriod =
+                    rpNormalisePeriod(
+                        event.target.value
+                        ||
+                        event.target
+                            .selectedOptions?.[0]
+                            ?.textContent
+                        ||
+                        ""
+                    );
+
+
+                await loadReportPackPeriods();
+
+
+                if (
+                    requestedPeriod
+                    &&
+                    reportPackSelectedPeriod
+                ) {
+
+                    await loadReportPackPreview();
+                }
+            }
+        );
+
+
     document
         .getElementById(
             "rp-project"
@@ -2277,6 +2615,11 @@ function initialiseReportPackEvents() {
 
                 reportPackSelectedProject =
                     event.target.value;
+
+                sessionStorage.setItem(
+                    "controlsight:selected-project",
+                    reportPackSelectedProject
+                );
 
                 await loadReportPackPreview();
             }

@@ -1342,6 +1342,29 @@ async function loadCCPortfolio() {
             .join("");
 
 
+    const sharedProject =
+        sessionStorage.getItem(
+            "controlsight:selected-project"
+        );
+
+
+    if (
+        !ccSelectedProject
+        &&
+        sharedProject
+        &&
+        projects.some(
+            project =>
+                project.project_code ===
+                sharedProject
+        )
+    ) {
+
+        ccSelectedProject =
+            sharedProject;
+    }
+
+
     if (
         !ccSelectedProject
         &&
@@ -2333,6 +2356,11 @@ function initialiseCCEvents() {
 
                 ccSelectedProject =
                     event.target.value;
+
+                sessionStorage.setItem(
+                    "controlsight:selected-project",
+                    ccSelectedProject
+                );
 
                 await loadCCProject();
             }

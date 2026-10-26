@@ -329,21 +329,13 @@ def utc_timestamp():
 
 def get_project_scorecard(
     connection,
-    project_code: str,
+    project_code,
+    reporting_period=None,
 ):
 
-    if not table_exists(
-        connection,
-        "report_management_scorecard",
-    ):
-
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                "report_management_scorecard "
-                "is unavailable."
-            ),
-        )
+    # --------------------------------------------------------
+    # BASE PROJECT / LATEST MANAGEMENT SCORECARD
+    # --------------------------------------------------------
 
     row = connection.execute(
         """
@@ -358,7 +350,8 @@ def get_project_scorecard(
         ),
     ).fetchone()
 
-    if not row:
+
+    if row is None:
 
         raise HTTPException(
             status_code=404,
@@ -368,7 +361,421 @@ def get_project_scorecard(
             ),
         )
 
-    return dict(row)
+
+    scorecard = dict(
+        row
+    )
+
+
+    if not reporting_period:
+
+        return scorecard
+
+
+    # --------------------------------------------------------
+    # PERIOD COST SNAPSHOT
+    #
+    # Mirrors the historical logic used by main.py:
+    #
+    # 1. aggregate cost by reporting date
+    # 2. calculate cumulative actual / committed
+    # 3. return the final snapshot inside selected YYYY-MM
+    # --------------------------------------------------------
+
+    cost = connection.execute(
+        """
+        WITH monthly_cost AS (
+
+            SELECT
+                fc.project_code,
+                dd.date,
+                dd.year_month,
+
+                SUM(
+                    fc.planned_cost
+                ) AS monthly_planned_cost,
+
+                SUM(
+                    fc.actual_cost
+                ) AS monthly_actual_cost,
+
+                SUM(
+                    fc.committed_cost
+                ) AS monthly_committed_cost,
+
+                SUM(
+                    fc.forecast_at_completion
+                ) AS forecast_at_completion
+
+            FROM fact_cost fc
+
+            JOIN dim_date dd
+                ON fc.date_key
+                = dd.date_key
+
+            WHERE
+                fc.project_code = ?
+                AND
+                dd.year_month <= ?
+
+            GROUP BY
+                fc.project_code,
+                dd.date,
+                dd.year_month
+        ),
+
+        cumulative AS (
+
+            SELECT
+                project_code,
+                date,
+                year_month,
+
+                SUM(
+                    monthly_planned_cost
+                ) OVER (
+                    ORDER BY date
+                )
+                    AS cumulative_planned_cost,
+
+                SUM(
+                    monthly_actual_cost
+                ) OVER (
+                    ORDER BY date
+                )
+                    AS cumulative_actual_cost,
+
+                SUM(
+                    monthly_committed_cost
+                ) OVER (
+                    ORDER BY date
+                )
+                    AS cumulative_committed_cost,
+
+                forecast_at_completion
+
+            FROM monthly_cost
+        )
+
+        SELECT *
+
+        FROM cumulative
+
+        WHERE year_month = ?
+
+        ORDER BY date DESC
+
+        LIMIT 1
+        """,
+        (
+            project_code,
+            reporting_period,
+            reporting_period,
+        ),
+    ).fetchone()
+
+
+    if cost is None:
+
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "No cost data for "
+                f"{project_code} "
+                "in "
+                f"{reporting_period}."
+            ),
+        )
+
+
+    cost = dict(
+        cost
+    )
+
+
+    scorecard[
+        "actual_cost_to_date"
+    ] = round(
+        safe_float(
+            cost.get(
+                "cumulative_actual_cost"
+            )
+        ),
+        2,
+    )
+
+
+    scorecard[
+        "committed_cost_to_date"
+    ] = round(
+        safe_float(
+            cost.get(
+                "cumulative_committed_cost"
+            )
+        ),
+        2,
+    )
+
+
+    scorecard[
+        "forecast_at_completion"
+    ] = round(
+        safe_float(
+            cost.get(
+                "forecast_at_completion"
+            )
+        ),
+        2,
+    )
+
+
+    # --------------------------------------------------------
+    # RECOMPUTE FORECAST VARIANCE FOR SELECTED PERIOD
+    # --------------------------------------------------------
+
+    budget = safe_float(
+        scorecard.get(
+            "approved_budget"
+        )
+    )
+
+
+    fac = safe_float(
+        scorecard.get(
+            "forecast_at_completion"
+        )
+    )
+
+
+    forecast_variance = (
+        budget
+        -
+        fac
+    )
+
+
+    scorecard[
+        "forecast_variance"
+    ] = round(
+        forecast_variance,
+        2,
+    )
+
+
+    scorecard[
+        "forecast_variance_pct"
+    ] = round(
+        (
+            forecast_variance
+            /
+            budget
+            *
+            100
+        )
+        if budget
+        else 0.0,
+        2,
+    )
+
+
+    # --------------------------------------------------------
+    # PERIOD PROGRESS SNAPSHOT
+    #
+    # Progress is a point-in-time percentage, so unlike cost
+    # it must NOT be cumulatively summed.
+    # --------------------------------------------------------
+
+    progress = connection.execute(
+        """
+        SELECT
+            fp.project_code,
+            dd.date,
+            dd.year_month,
+            fp.planned_progress_pct,
+            fp.actual_progress_pct,
+            fp.progress_variance_pct,
+            fp.behind_schedule_flag
+
+        FROM fact_progress fp
+
+        JOIN dim_date dd
+            ON fp.date_key
+            = dd.date_key
+
+        WHERE
+            fp.project_code = ?
+            AND
+            dd.year_month = ?
+
+        ORDER BY
+            dd.date DESC
+
+        LIMIT 1
+        """,
+        (
+            project_code,
+            reporting_period,
+        ),
+    ).fetchone()
+
+
+    if progress is not None:
+
+        progress = dict(
+            progress
+        )
+
+
+        scorecard[
+            "planned_progress_pct"
+        ] = safe_float(
+            progress.get(
+                "planned_progress_pct"
+            )
+        )
+
+
+        scorecard[
+            "actual_progress_pct"
+        ] = safe_float(
+            progress.get(
+                "actual_progress_pct"
+            )
+        )
+
+
+        scorecard[
+            "progress_variance_pct"
+        ] = safe_float(
+            progress.get(
+                "progress_variance_pct"
+            )
+        )
+
+
+    # --------------------------------------------------------
+    # PERIOD FORECAST CONCERN CROSS-CHECK
+    # --------------------------------------------------------
+
+    actual_cost = safe_float(
+        scorecard.get(
+            "actual_cost_to_date"
+        )
+    )
+
+
+    actual_progress = safe_float(
+        scorecard.get(
+            "actual_progress_pct"
+        )
+    )
+
+
+    fac = safe_float(
+        scorecard.get(
+            "forecast_at_completion"
+        )
+    )
+
+
+    progress_implied_eac = 0.0
+
+
+    if actual_progress > 0:
+
+        progress_implied_eac = (
+            actual_cost
+            /
+            (
+                actual_progress
+                /
+                100
+            )
+        )
+
+
+    credibility_gap = (
+        progress_implied_eac
+        -
+        fac
+    )
+
+
+    credibility_gap_pct = (
+        (
+            credibility_gap
+            /
+            fac
+            *
+            100
+        )
+        if fac
+        else 0.0
+    )
+
+
+    abs_gap = abs(
+        credibility_gap_pct
+    )
+
+
+    if abs_gap >= 20:
+
+        credibility_status = (
+            "Critical"
+        )
+
+    elif abs_gap >= 10:
+
+        credibility_status = (
+            "High"
+        )
+
+    elif abs_gap >= 5:
+
+        credibility_status = (
+            "Watch"
+        )
+
+    else:
+
+        credibility_status = (
+            "Stable"
+        )
+
+
+    scorecard[
+        "progress_implied_eac"
+    ] = round(
+        progress_implied_eac,
+        2,
+    )
+
+
+    scorecard[
+        "forecast_credibility_gap"
+    ] = round(
+        credibility_gap,
+        2,
+    )
+
+
+    scorecard[
+        "forecast_credibility_gap_pct"
+    ] = round(
+        credibility_gap_pct,
+        2,
+    )
+
+
+    scorecard[
+        "forecast_credibility_status"
+    ] = credibility_status
+
+
+    return scorecard
+
+
 
 
 # ============================================================
@@ -1316,6 +1723,7 @@ def get_procurement_summary(
 def resolve_reporting_period(
     connection,
     requested_period,
+    project_code=None,
 ):
 
     if requested_period:
@@ -1335,20 +1743,37 @@ def resolve_reporting_period(
         return requested_period
 
 
-    if table_exists(
-        connection,
-        "project_cashflow",
-    ):
+    # --------------------------------------------------------
+    # DEFAULT PERIOD
+    #
+    # A Report Pack performance period must be driven by the
+    # project's cost/progress reporting data, not by cash-flow.
+    # Cash-flow may extend into future planning periods.
+    # --------------------------------------------------------
+
+    if project_code:
 
         row = connection.execute(
             """
-            SELECT MAX(
-                reporting_period
-            ) AS reporting_period
+            SELECT
+                MAX(
+                    dd.year_month
+                ) AS reporting_period
 
-            FROM project_cashflow
-            """
+            FROM fact_cost fc
+
+            JOIN dim_date dd
+                ON fc.date_key
+                = dd.date_key
+
+            WHERE
+                fc.project_code = ?
+            """,
+            (
+                project_code,
+            ),
         ).fetchone()
+
 
         if (
             row
@@ -1363,12 +1788,47 @@ def resolve_reporting_period(
             ]
 
 
+    # --------------------------------------------------------
+    # GLOBAL FALLBACK
+    # --------------------------------------------------------
+
+    row = connection.execute(
+        """
+        SELECT
+            MAX(
+                dd.year_month
+            ) AS reporting_period
+
+        FROM fact_cost fc
+
+        JOIN dim_date dd
+            ON fc.date_key
+            = dd.date_key
+        """
+    ).fetchone()
+
+
+    if (
+        row
+        and
+        row[
+            "reporting_period"
+        ]
+    ):
+
+        return row[
+            "reporting_period"
+        ]
+
+
     return (
         datetime.now(UTC)
         .strftime(
             "%Y-%m"
         )
     )
+
+
 
 
 # ============================================================
@@ -1382,18 +1842,20 @@ def build_report_data(
 
     with get_connection() as connection:
 
-        scorecard = (
-            get_project_scorecard(
+        reporting_period = (
+            resolve_reporting_period(
                 connection,
+                requested_period,
                 project_code,
             )
         )
 
 
-        reporting_period = (
-            resolve_reporting_period(
+        scorecard = (
+            get_project_scorecard(
                 connection,
-                requested_period,
+                project_code,
+                reporting_period,
             )
         )
 
@@ -1600,7 +2062,7 @@ def build_report_data(
         "methodology_notes": [
 
             (
-                "Forecast credibility uses a "
+                "Forecast concern uses a "
                 "progress-implied completion-cost "
                 "proxy as a management cross-check. "
                 "It is not formal earned-value EAC."
@@ -1993,7 +2455,7 @@ def create_pdf(
 
     story.append(
         Paragraph(
-            "2. Forecast Credibility",
+            "2. Forecast Concern",
             section_style,
         )
     )
@@ -2018,7 +2480,7 @@ def create_pdf(
                 ),
             ],
             [
-                "Credibility Gap",
+                "Forecast Gap",
                 money(
                     performance[
                         "forecast_credibility_gap"
@@ -2026,7 +2488,7 @@ def create_pdf(
                 ),
             ],
             [
-                "Credibility Gap %",
+                "Forecast Gap %",
                 percentage(
                     performance[
                         "forecast_credibility_gap_pct"
@@ -2034,7 +2496,7 @@ def create_pdf(
                 ),
             ],
             [
-                "Credibility Status",
+                "Concern Status",
                 text_value(
                     performance[
                         "forecast_credibility_status"
@@ -2814,7 +3276,7 @@ def create_pdf(
         ),
 
         (
-            "Forecast Credibility",
+            "Forecast Concern",
             commentary.get(
                 "forecast_credibility_note"
             )
@@ -3389,7 +3851,7 @@ def create_excel(
         ),
 
         (
-            "Forecast Credibility",
+            "Forecast Concern",
             performance[
                 "forecast_credibility_status"
             ],
@@ -3403,7 +3865,7 @@ def create_excel(
         ),
 
         (
-            "Forecast Credibility Gap",
+            "Forecast Concern Gap",
             performance[
                 "forecast_credibility_gap"
             ],
@@ -4099,7 +4561,7 @@ def create_excel(
         ),
 
         (
-            "Forecast Credibility",
+            "Forecast Concern",
             commentary.get(
                 "forecast_credibility_note"
             ),

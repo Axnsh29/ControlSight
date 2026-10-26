@@ -250,6 +250,49 @@ async function fetchJson(url) {
 }
 
 
+
+/* ============================================================
+   REPORTING PERIOD HELPERS
+   ============================================================ */
+
+function getSelectedReportingPeriod() {
+
+    const select =
+        document.querySelector(
+            "#reporting-period-control select"
+        );
+
+    return String(
+        select?.value || ""
+    ).trim();
+}
+
+
+function projectApiUrl(
+    projectCode,
+    endpoint
+) {
+
+    const period =
+        getSelectedReportingPeriod();
+
+
+    const baseUrl =
+        `${API_BASE}/projects/${projectCode}/${endpoint}`;
+
+
+    if (!period) {
+        return baseUrl;
+    }
+
+
+    return (
+        `${baseUrl}?reporting_period=` +
+        encodeURIComponent(period)
+    );
+}
+
+
 /* ============================================================
    NAVIGATION
    ============================================================ */
@@ -532,7 +575,7 @@ function showProjectSelectionPrompt() {
    PROJECT SUB-VIEWS
    ------------------------------------------------------------ */
 
-function showProjectControlView(
+async function showProjectControlView(
     targetHash
 ) {
 
@@ -542,28 +585,97 @@ function showProjectControlView(
 
 
     /*
-     * Project detail content is rendered dynamically.
-     * Give the browser one frame before scrolling.
+     * Project-control panels are rendered dynamically.
+     * If the requested panel is not currently available,
+     * refresh the selected project before navigating.
      */
+
+    let target =
+        document.querySelector(
+            targetHash
+        );
+
+
+    if (
+        !target
+        &&
+        selectedProjectCode
+    ) {
+
+        try {
+
+            await loadProjectOverview(
+                selectedProjectCode
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Unable to prepare project control view:",
+                error
+            );
+        }
+
+
+        target =
+            document.querySelector(
+                targetHash
+            );
+    }
+
+
+    if (!target) {
+
+        console.warn(
+            "Project control target not found:",
+            targetHash
+        );
+
+        return;
+    }
+
+
+    const projectDetail =
+        document.getElementById(
+            "project-detail"
+        );
+
+
+    if (projectDetail) {
+
+        projectDetail
+            .classList
+            .remove(
+                "hidden"
+            );
+
+        projectDetail.style.display =
+            "";
+
+        projectDetail.setAttribute(
+            "aria-hidden",
+            "false"
+        );
+    }
+
 
     window.requestAnimationFrame(
         () => {
 
-            const target =
-                document.querySelector(
-                    targetHash
-                );
+            window.requestAnimationFrame(
+                () => {
 
+                    target.scrollIntoView(
+                        {
+                            behavior:
+                                "smooth",
 
-            target
-                ?.scrollIntoView({
-                    behavior:
-                        "smooth",
-
-                    block:
-                        "start"
-                });
-
+                            block:
+                                "start"
+                        }
+                    );
+                }
+            );
         }
     );
 }
@@ -2050,6 +2162,15 @@ async function loadProjects() {
                                 projectCode
                             );
 
+
+                            navigateToHash(
+                                "#project-detail",
+                                {
+                                    updateHash: true,
+                                    scroll: true
+                                }
+                            );
+
                         }
                     );
 
@@ -2148,6 +2269,13 @@ async function loadProjectOverview(
     projectCode
 ) {
 
+    if (projectCode) {
+        sessionStorage.setItem(
+            "controlsight:selected-project",
+            projectCode
+        );
+    }
+
     const container =
         document.getElementById(
             "project-detail"
@@ -2162,7 +2290,7 @@ async function loadProjectOverview(
 
         const data =
             await fetchJson(
-                `${API_BASE}/projects/${projectCode}/overview`
+                projectApiUrl(projectCode, "overview")
             );
 
 
@@ -2456,8 +2584,10 @@ async function loadProjectOverview(
                         </h3>
 
                         <p>
-                            Schedule and procurement risks
-                            requiring management attention.
+                            Latest available schedule and procurement
+                            risks requiring management attention.
+                            These operational risk panels are not
+                            filtered by the historical reporting period.
                         </p>
 
                     </div>
@@ -2887,7 +3017,7 @@ async function loadCostTrend(
 
         const data =
             await fetchJson(
-                `${API_BASE}/projects/${projectCode}/cost-trend`
+                projectApiUrl(projectCode, "cost-trend")
             );
 
 
@@ -3372,7 +3502,7 @@ async function loadProgressTrend(
 
         const data =
             await fetchJson(
-                `${API_BASE}/projects/${projectCode}/progress-trend`
+                projectApiUrl(projectCode, "progress-trend")
             );
 
 
@@ -3900,6 +4030,11 @@ async function loadScheduleRisk(
                     </strong>
                 </div>
 
+            </div>
+
+
+            <div class="risk-snapshot-note">
+                Latest available snapshot
             </div>
 
 
@@ -4811,3 +4946,76 @@ document.addEventListener(
 
     }
 );
+/* ============================================================
+   REPORTING PERIOD — PROJECT REFRESH
+   ============================================================ */
+
+(function initialiseProjectPeriodRefresh() {
+
+    function attach() {
+
+        const select =
+            document.querySelector(
+                "#reporting-period-control select"
+            );
+
+
+        if (!select) {
+
+            window.setTimeout(
+                attach,
+                150
+            );
+
+            return;
+        }
+
+
+        if (
+            select.dataset
+                .projectPeriodRefreshAttached ===
+            "true"
+        ) {
+            return;
+        }
+
+
+        select.dataset
+            .projectPeriodRefreshAttached =
+            "true";
+
+
+        select.addEventListener(
+            "change",
+            async () => {
+
+                if (!selectedProjectCode) {
+                    return;
+                }
+
+
+                await loadProjectOverview(
+                    selectedProjectCode
+                );
+
+            }
+        );
+    }
+
+
+    if (
+        document.readyState ===
+        "loading"
+    ) {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            attach
+        );
+
+    } else {
+
+        attach();
+    }
+
+})();

@@ -545,3 +545,43 @@
     }
 
 }
+
+/* ============================================================
+   LATEST-SNAPSHOT DISCLOSURE
+   ============================================================ */
+
+#project-detail .risk-snapshot-note {
+    display: inline-flex;
+    align-items: center;
+
+    margin:
+        12px
+        0
+        10px;
+
+    padding:
+        5px
+        8px;
+
+    border:
+        1px solid
+        #dbe3ec;
+
+    border-radius:
+        999px;
+
+    background:
+        #f8fafc;
+
+    color:
+        #64748b;
+
+    font-size:
+        11px;
+
+    font-weight:
+        700;
+
+    line-height:
+        1.2;
+}

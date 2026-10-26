@@ -1700,6 +1700,29 @@ async function loadRCPortfolio() {
             .join("");
 
 
+    const sharedProject =
+        sessionStorage.getItem(
+            "controlsight:selected-project"
+        );
+
+
+    if (
+        !rcSelectedProject
+        &&
+        sharedProject
+        &&
+        projects.some(
+            project =>
+                project.project_code ===
+                sharedProject
+        )
+    ) {
+
+        rcSelectedProject =
+            sharedProject;
+    }
+
+
     if (
         !rcSelectedProject
         &&
@@ -1786,6 +1809,111 @@ function renderRCContingency(
         document.getElementById(
             "rc-contingency-kpis"
         );
+
+
+    const contingencyConfigured =
+        String(
+            data.status || ""
+        ).toLowerCase()
+        !==
+        "not configured";
+
+
+    if (!contingencyConfigured) {
+
+        container.innerHTML = `
+
+            <div class="rc-kpi">
+
+                <span>
+                    Current Budget
+                </span>
+
+                <strong>
+                    ${rcMoney(
+                        data.current_budget
+                    )}
+                </strong>
+
+            </div>
+
+
+            <div class="rc-kpi">
+
+                <span>
+                    Contingency
+                </span>
+
+                <strong>
+                    Not configured
+                </strong>
+
+            </div>
+
+
+            <div class="rc-kpi">
+
+                <span>
+                    Proposed Exposure
+                </span>
+
+                <strong>
+                    Not configured
+                </strong>
+
+            </div>
+
+
+            <div class="rc-kpi">
+
+                <span>
+                    Approved not Drawn
+                </span>
+
+                <strong>
+                    Not configured
+                </strong>
+
+            </div>
+
+
+            <div class="rc-kpi">
+
+                <span>
+                    Drawn Contingency
+                </span>
+
+                <strong>
+                    Not configured
+                </strong>
+
+            </div>
+
+
+            <div class="rc-kpi">
+
+                <span>
+                    Remaining Contingency
+                </span>
+
+                <strong>
+                    Not configured
+                </strong>
+
+                <span
+                    class="
+                        rc-status
+                        not-configured
+                    "
+                >
+                    Not Configured
+                </span>
+
+            </div>
+        `;
+
+        return;
+    }
 
 
     container.innerHTML = `
@@ -2732,6 +2860,87 @@ function renderRCCashflow(
         );
 
 
+    const periods =
+        Array.isArray(
+            data.periods
+        )
+            ? data.periods
+            : [];
+
+
+    if (!periods.length) {
+
+        summary.innerHTML = `
+
+            <div class="rc-cash-card">
+
+                <span>
+                    Forecast Cash
+                </span>
+
+                <strong>
+                    Not configured
+                </strong>
+
+            </div>
+
+
+            <div class="rc-cash-card">
+
+                <span>
+                    Actual Cash
+                </span>
+
+                <strong>
+                    Not configured
+                </strong>
+
+            </div>
+
+
+            <div class="rc-cash-card">
+
+                <span>
+                    Committed Cash
+                </span>
+
+                <strong>
+                    Not configured
+                </strong>
+
+            </div>
+
+
+            <div class="rc-cash-card">
+
+                <span>
+                    Cash Variance
+                </span>
+
+                <strong>
+                    Not configured
+                </strong>
+
+                <span>
+                    No cash-flow periods saved
+                </span>
+
+            </div>
+        `;
+
+
+        renderRCCashChart(
+            []
+        );
+
+        renderRCCashTable(
+            []
+        );
+
+        return;
+    }
+
+
     summary.innerHTML = `
 
         <div class="rc-cash-card">
@@ -3331,6 +3540,11 @@ function initialiseRCEvents() {
 
                 rcSelectedProject =
                     event.target.value;
+
+                sessionStorage.setItem(
+                    "controlsight:selected-project",
+                    rcSelectedProject
+                );
 
                 await loadRCProject();
             }
