@@ -3,5 +3,13 @@ name = "controlsight"
 version = "1.0.0"
 requires-python = ">=3.13,<3.14"
 
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pandas",
+    "numpy",
+    "reportlab",
+]
+
 [tool.vercel]
 entrypoint = "src.backend.main:app"
