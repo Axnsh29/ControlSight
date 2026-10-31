@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 
+from src.backend.runtime_paths import get_runtime_database_path
 # ============================================================
 # ROUTER
 # ============================================================
@@ -27,12 +28,7 @@ PROJECT_ROOT = (
     .parents[2]
 )
 
-DATABASE_PATH = (
-    PROJECT_ROOT
-    / "data"
-    / "database"
-    / "controlsight.db"
-)
+DATABASE_PATH = get_runtime_database_path()
 
 
 # ============================================================

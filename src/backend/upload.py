@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 
 
+from src.backend.runtime_paths import get_runtime_database_path
 # ============================================================
 # ROUTER
 # ============================================================
@@ -42,12 +43,7 @@ UPLOAD_DATABASE_PATH = (
     / "uploads.db"
 )
 
-ANALYTICAL_DATABASE_PATH = (
-    PROJECT_ROOT
-    / "data"
-    / "database"
-    / "controlsight.db"
-)
+ANALYTICAL_DATABASE_PATH = get_runtime_database_path()
 
 
 # ============================================================

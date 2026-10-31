@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 
+from src.backend.runtime_paths import get_runtime_database_path
 # ============================================================
 # OPTIONAL EXPORT DEPENDENCIES
 # ============================================================
@@ -74,12 +75,7 @@ PROJECT_ROOT = (
     .parents[2]
 )
 
-DATABASE_PATH = (
-    PROJECT_ROOT
-    / "data"
-    / "database"
-    / "controlsight.db"
-)
+DATABASE_PATH = get_runtime_database_path()
 
 REPORT_OUTPUT_DIR = (
     PROJECT_ROOT

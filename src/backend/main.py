@@ -15,6 +15,7 @@ from src.backend.risk_cashflow import router as risk_cashflow_router
 from src.backend.report_pack import router as report_pack_router
 
 
+from src.backend.runtime_paths import get_runtime_database_path
 # ============================================================
 # APPLICATION
 # ============================================================
@@ -63,12 +64,7 @@ PROJECT_ROOT = (
     .parents[2]
 )
 
-DATABASE_PATH = (
-    PROJECT_ROOT
-    / "data"
-    / "database"
-    / "controlsight.db"
-)
+DATABASE_PATH = get_runtime_database_path()
 
 PROCESSED_DATA_PATH = (
     PROJECT_ROOT
