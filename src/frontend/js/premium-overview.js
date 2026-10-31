@@ -3490,3 +3490,332 @@
     }
 
 })();
+
+
+/* ============================================================
+   CONTROLSIGHT SHARED PERIOD NAVIGATION FIX
+   ============================================================ */
+
+(function () {
+    "use strict";
+
+    const PERIOD_KEY =
+        "controlsight:reporting-period";
+
+    let syncing =
+        false;
+
+
+    function getPremiumSelect() {
+        return document.getElementById(
+            "po-reporting-period"
+        );
+    }
+
+
+    function getLegacySelect() {
+        return document.querySelector(
+            "#reporting-period-control select"
+        );
+    }
+
+
+    function savePeriod(value) {
+
+        const period =
+            String(value || "").trim();
+
+        if (!period) {
+            return;
+        }
+
+        sessionStorage.setItem(
+            PERIOD_KEY,
+            period
+        );
+    }
+
+
+    function syncPeriod(
+        period,
+        source = null
+    ) {
+
+        if (
+            !period ||
+            syncing
+        ) {
+            return;
+        }
+
+        syncing =
+            true;
+
+        savePeriod(
+            period
+        );
+
+
+        const premium =
+            getPremiumSelect();
+
+        const legacy =
+            getLegacySelect();
+
+
+        if (
+            premium &&
+            premium !== source
+        ) {
+            premium.value =
+                period;
+        }
+
+
+        if (
+            legacy &&
+            legacy !== source
+        ) {
+
+            const changed =
+                legacy.value !==
+                period;
+
+            legacy.value =
+                period;
+
+
+            if (changed) {
+
+                legacy.dispatchEvent(
+                    new Event(
+                        "change",
+                        {
+                            bubbles: true
+                        }
+                    )
+                );
+            }
+        }
+
+
+        syncing =
+            false;
+    }
+
+
+    document.addEventListener(
+        "change",
+        event => {
+
+            const target =
+                event.target;
+
+
+            if (
+                target?.id ===
+                "po-reporting-period"
+            ) {
+
+                syncPeriod(
+                    target.value,
+                    target
+                );
+
+                return;
+            }
+
+
+            if (
+                target?.matches?.(
+                    "#reporting-period-control select"
+                )
+            ) {
+
+                syncPeriod(
+                    target.value,
+                    target
+                );
+            }
+
+        },
+        true
+    );
+
+
+    function restorePeriod() {
+
+        const saved =
+            sessionStorage.getItem(
+                PERIOD_KEY
+            );
+
+        if (saved) {
+
+            syncPeriod(
+                saved
+            );
+
+            return;
+        }
+
+
+        const premium =
+            getPremiumSelect();
+
+        const legacy =
+            getLegacySelect();
+
+        const initial =
+            premium?.value ||
+            legacy?.value;
+
+        if (initial) {
+            syncPeriod(
+                initial
+            );
+        }
+    }
+
+
+    async function openProject(
+        projectCode
+    ) {
+
+        if (!projectCode) {
+            return;
+        }
+
+
+        restorePeriod();
+
+
+        sessionStorage.setItem(
+            "controlsight:selected-project",
+            projectCode
+        );
+
+
+        if (
+            typeof loadProjectOverview ===
+            "function"
+        ) {
+
+            await loadProjectOverview(
+                projectCode
+            );
+        }
+
+
+        if (
+            typeof navigateToHash ===
+            "function"
+        ) {
+
+            navigateToHash(
+                "#project-detail",
+                {
+                    updateHash: true,
+                    scroll: true
+                }
+            );
+
+            window.dispatchEvent(
+                new HashChangeEvent(
+                    "hashchange"
+                )
+            );
+
+        } else {
+
+            window.location.hash =
+                "#project-detail";
+        }
+    }
+
+
+    document.addEventListener(
+        "click",
+        event => {
+
+            const searchResult =
+                event.target.closest(
+                    "#premium-overview .po-search-result"
+                );
+
+
+            if (searchResult) {
+
+                event.preventDefault();
+                event.stopImmediatePropagation();
+
+                openProject(
+                    searchResult.dataset
+                        .projectCode
+                ).catch(
+                    console.error
+                );
+
+                return;
+            }
+
+
+            const attentionRow =
+                event.target.closest(
+                    "#po-attention-panel tbody tr"
+                );
+
+
+            if (attentionRow) {
+
+                event.preventDefault();
+                event.stopImmediatePropagation();
+
+                openProject(
+                    attentionRow.dataset
+                        .projectCode
+                ).catch(
+                    console.error
+                );
+            }
+
+        },
+        true
+    );
+
+
+    window.addEventListener(
+        "hashchange",
+        () => {
+
+            setTimeout(
+                restorePeriod,
+                0
+            );
+        }
+    );
+
+
+    let attempts = 0;
+
+    const timer =
+        setInterval(
+            () => {
+
+                attempts += 1;
+
+                restorePeriod();
+
+                if (
+                    attempts >= 20
+                ) {
+                    clearInterval(
+                        timer
+                    );
+                }
+
+            },
+            150
+        );
+
+})();

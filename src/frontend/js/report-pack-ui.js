@@ -1552,6 +1552,8 @@ async function loadReportPackPeriods() {
 
 
                     return (
+                        item.year_month
+                        ||
                         item.reporting_period
                         ||
                         item.period

@@ -257,6 +257,28 @@ async function fetchJson(url) {
 
 function getSelectedReportingPeriod() {
 
+    const sharedPeriod =
+        sessionStorage.getItem(
+            "controlsight:reporting-period"
+        );
+
+    if (sharedPeriod) {
+        return String(
+            sharedPeriod
+        ).trim();
+    }
+
+    const premiumSelect =
+        document.getElementById(
+            "po-reporting-period"
+        );
+
+    if (premiumSelect?.value) {
+        return String(
+            premiumSelect.value
+        ).trim();
+    }
+
     const select =
         document.querySelector(
             "#reporting-period-control select"
@@ -2298,6 +2320,10 @@ async function loadProjectOverview(
 ) {
 
     if (projectCode) {
+
+        selectedProjectCode =
+            projectCode;
+
         sessionStorage.setItem(
             "controlsight:selected-project",
             projectCode
