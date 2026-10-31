@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 import re
+import os
 import sqlite3
 
 from fastapi import APIRouter, HTTPException
@@ -77,11 +78,16 @@ PROJECT_ROOT = (
 
 DATABASE_PATH = get_runtime_database_path()
 
-REPORT_OUTPUT_DIR = (
-    PROJECT_ROOT
-    / "data"
-    / "report_packs"
-)
+if os.getenv("VERCEL"):
+    REPORT_OUTPUT_DIR = Path(
+        "/tmp/controlsight_report_packs"
+    )
+else:
+    REPORT_OUTPUT_DIR = (
+        PROJECT_ROOT
+        / "data"
+        / "report_packs"
+    )
 
 REPORT_OUTPUT_DIR.mkdir(
     parents=True,
