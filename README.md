@@ -2,7 +2,7 @@
 
 ### Project Controls Intelligence Platform
 
-**Live Demo:** https://controlsight.onrender.com
+**Live Demo:** https://control-sight.vercel.app
 
 ControlSight is an end-to-end project controls application that transforms synthetic EPC-style cost, progress, schedule, procurement and data-quality information into management-ready intelligence.
 
@@ -452,7 +452,7 @@ Historical report packs have been checked to ensure prior-period values are not 
 - automated regression testing
 - data-validation checks
 - API smoke tests
-- Render deployment
+- Vercel deployment
 
 ---
 
@@ -479,13 +479,13 @@ The final desktop reporting paths were checked for internal consistency across p
 
 ## Deployment
 
-ControlSight is deployed on Render.
+ControlSight is deployed on **Vercel** using its Python/FastAPI runtime.
 
 **Live Application**
 
-https://controlsight.onrender.com
+https://control-sight.vercel.app
 
-The free hosting instance may require a short cold start after inactivity.
+The deployed portfolio demo ships with a synthetic SQLite analytical snapshot. Vercel runtime-generated files and writable SQLite state use temporary serverless storage, so durable multi-user persistence would require an external database and object-storage layer in a production architecture.
 
 ---
 
