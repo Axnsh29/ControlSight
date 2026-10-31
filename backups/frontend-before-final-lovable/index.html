@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="ControlSight is a project controls intelligence platform for identifying cost pressure, progress slippage, schedule exposure, procurement risk and data-quality exceptions."
+    >
+
+    <meta
+        property="og:title"
+        content="ControlSight | Project Controls Intelligence"
+    >
+
+    <meta
+        property="og:description"
+        content="Identify cost pressure, progress slippage and delivery risk across a project portfolio."
+    >
+
+    <meta
+        property="og:type"
+        content="website"
+    >
+
+    <meta
+        name="theme-color"
+        content="#071426"
+    >
+
+    <title>
+        ControlSight | Project Controls Intelligence
+    </title>
+
+
+    <link
+        rel="icon"
+        href="data:image/svg+xml,
+        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
+        <rect width='64' height='64' rx='14' fill='%232563eb'/>
+        <text x='32' y='39' text-anchor='middle'
+        font-family='Arial' font-size='23'
+        font-weight='700' fill='white'>CS</text>
+        </svg>"
+    >
+
+
+    <link
+        rel="stylesheet"
+        href="/css/styles.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/css/polish.css"
+    >
+
+    <link rel="stylesheet" href="/css/drawer.css">
+    <link rel="stylesheet" href="/css/page-polish.css">
+    <link rel="stylesheet" href="/css/attention-redesign.css">
+    <link rel="stylesheet" href="/css/design-system.css">
+    <link rel="stylesheet" href="/css/reporting-period-fix.css">
+    <link rel="stylesheet" href="/css/secondary-pages.css">
+    <link rel="stylesheet" href="/css/project-detail-redesign.css">
+    <link rel="stylesheet" href="/css/overview-v2.css">
+</head>
+
+
+<body>
+
+<div class="application-shell">
+
+
+    <!-- =====================================================
+         SIDEBAR
+         ===================================================== -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+
+            <div class="brand-mark">
+                CS
+            </div>
+
+
+            <div class="brand-copy">
+
+                <strong>
+                    ControlSight
+                </strong>
+
+                <span>
+                    Project Intelligence
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <nav
+            class="sidebar-nav"
+            aria-label="Dashboard navigation"
+        >
+
+            <span class="nav-label">
+                Workspace
+            </span>
+
+
+            <a
+                href="#portfolio-overview"
+                class="nav-item active"
+            >
+
+                <span class="nav-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <rect
+                            x="3"
+                            y="3"
+                            width="7"
+                            height="7"
+                            rx="1"
+                        />
+                        <rect
+                            x="14"
+                            y="3"
+                            width="7"
+                            height="7"
+                            rx="1"
+                        />
+                        <rect
+                            x="3"
+                            y="14"
+                            width="7"
+                            height="7"
+                            rx="1"
+                        />
+                        <rect
+                            x="14"
+                            y="14"
+                            width="7"
+                            height="7"
+                            rx="1"
+                        />
+                    </svg>
+
+                </span>
+
+                Overview
+
+            </a>
+
+
+            <a
+                href="#project-portfolio"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M4 6h16"/>
+                        <path d="M4 12h16"/>
+                        <path d="M4 18h16"/>
+                        <circle cx="7" cy="6" r="1"/>
+                        <circle cx="7" cy="12" r="1"/>
+                        <circle cx="7" cy="18" r="1"/>
+                    </svg>
+
+                </span>
+
+                Projects
+
+            </a>
+
+
+            <a
+                href="#project-detail"
+                class="nav-item project-nav"
+            >
+
+                <span class="nav-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M4 18l5-5 4 3 7-9"/>
+                        <path d="M15 7h5v5"/>
+                    </svg>
+
+                </span>
+
+                Performance
+
+            </a>
+
+
+            <span class="nav-label nav-label-secondary">
+                Controls
+            </span>
+
+
+            <a
+                href="#cost-performance"
+                class="nav-item project-nav"
+            >
+
+                <span class="nav-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M7 7c0-2 1.7-3 4-3 2.5 0 4 1.1 4 3"/>
+                        <path d="M7 17c0 2 1.7 3 4 3 2.5 0 4-1.1 4-3"/>
+                        <path d="M6 10h8"/>
+                        <path d="M6 14h7"/>
+                    </svg>
+
+                </span>
+
+                Cost
+
+            </a>
+
+
+            <a
+                href="#schedule-risk-panel"
+                class="nav-item project-nav"
+            >
+
+                <span class="nav-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <circle
+                            cx="12"
+                            cy="12"
+                            r="8"
+                        />
+                        <path d="M12 7v5l3 2"/>
+                    </svg>
+
+                </span>
+
+                Schedule
+
+            </a>
+
+
+            <a
+                href="#procurement-risk-panel"
+                class="nav-item project-nav"
+            >
+
+                <span class="nav-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M4 7h16l-2 10H6L4 7z"/>
+                        <path d="M9 7V5h6v2"/>
+                        <path d="M8 20h.01"/>
+                        <path d="M16 20h.01"/>
+                    </svg>
+
+                </span>
+
+                Procurement
+
+            </a>
+
+
+            <a
+                href="#data-quality"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M5 12l4 4L19 6"/>
+                    </svg>
+
+                </span>
+
+                Data Quality
+
+            </a>
+
+        </nav>
+
+
+        <div class="sidebar-footer">
+
+            <div class="system-status">
+
+                <span class="status-indicator"></span>
+
+                <div>
+
+                    <strong>
+                        Systems Operational
+                    </strong>
+
+                    <span>
+                        Controlled analytical layer
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="sidebar-version">
+                ControlSight · Demo v1.1
+            </div>
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- =====================================================
+         MAIN APPLICATION
+         ===================================================== -->
+
+    <div class="main-shell">
+
+
+        <header class="topbar">
+
+            <div>
+
+                <span class="topbar-eyebrow">
+                    PROJECT CONTROLS
+                </span>
+
+                <h1>
+                    ControlSight — Portfolio Intelligence
+                </h1>
+
+            </div>
+
+
+            <div class="topbar-actions">
+
+                <div
+                    id="reporting-snapshot"
+                    class="snapshot-indicator"
+                >
+
+                    <span class="snapshot-label">
+                        Reporting snapshot
+                    </span>
+
+                    <strong id="snapshot-date">
+                        Resolving...
+                    </strong>
+
+                </div>
+
+
+                <div class="live-data">
+
+                    <span class="live-dot"></span>
+
+                    Connected
+
+                </div>
+
+
+                <div class="environment-badge">
+                    MANAGEMENT VIEW
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <main class="dashboard-content">
+
+
+            <!-- =============================================
+                 PORTFOLIO OVERVIEW
+                 ============================================= -->
+
+            <section
+                id="portfolio-overview"
+                class="portfolio-overview"
+            >
+
+
+                <div class="hero-panel">
+
+                    <div class="hero-copy">
+
+                        <span class="section-eyebrow">
+                            Portfolio Control
+                        </span>
+
+
+                        <h2>
+                            Identify cost pressure,
+                            progress slippage and delivery
+                            risk across the portfolio.
+                        </h2>
+
+
+                        <p>
+                            ControlSight brings cost,
+                            schedule, procurement and
+                            data-quality signals into one
+                            management view so attention can
+                            be directed to the projects that
+                            need it most.
+                        </p>
+
+
+                        <div class="hero-capabilities">
+
+                            <span>
+                                Cost forecasting
+                            </span>
+
+                            <span>
+                                Progress control
+                            </span>
+
+                            <span>
+                                Delivery risk
+                            </span>
+
+                            <span>
+                                Data governance
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="demo-disclosure">
+
+                        <span>
+                            Demonstration Environment
+                        </span>
+
+                        <strong>
+                            Synthetic EPC project data
+                        </strong>
+
+                        <p>
+                            Built to demonstrate a controlled
+                            analytics workflow from source
+                            data through validation, API and
+                            management reporting.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =========================================
+                     KPI SKELETON
+                     ========================================= -->
+
+                <div id="portfolio-kpis">
+
+                    <div class="skeleton-kpi"></div>
+                    <div class="skeleton-kpi"></div>
+                    <div class="skeleton-kpi"></div>
+                    <div class="skeleton-kpi"></div>
+                    <div class="skeleton-kpi"></div>
+                    <div class="skeleton-kpi"></div>
+
+                </div>
+
+
+
+                <!-- =========================================
+                     PORTFOLIO COST EXPOSURE
+                     ========================================= -->
+
+                <section
+                    id="portfolio-attention-panel"
+                    class="portfolio-attention-panel"
+                >
+
+                    <div class="attention-header">
+
+                        <div>
+
+                            <span class="section-eyebrow">
+                                Management Priorities
+                            </span>
+
+                            <h3>
+                                Management Attention Index
+                            </h3>
+
+                            <p>
+                                Transparent rules-based
+                                prioritisation of projects
+                                requiring management review.
+                                This is not a probability of
+                                project failure.
+                            </p>
+
+                        </div>
+
+
+                        <div
+                            id="attention-methodology-summary"
+                            class="attention-methodology-summary"
+                            aria-label="Attention score methodology"
+                        >
+
+                            <span>
+                                Cost
+                                <strong>/30</strong>
+                            </span>
+
+                            <span>
+                                Progress
+                                <strong>/25</strong>
+                            </span>
+
+                            <span>
+                                Critical Schedule
+                                <strong>/25</strong>
+                            </span>
+
+                            <span>
+                                Procurement
+                                <strong>/15</strong>
+                            </span>
+
+                            <span>
+                                Data Quality
+                                <strong>/5</strong>
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        id="portfolio-attention"
+                        class="portfolio-attention"
+                    >
+
+                        <div class="skeleton-priority">
+
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+
+                <!-- =========================================
+                     MANAGEMENT ATTENTION INDEX
+                     ========================================= -->
+
+                <section
+                    id="portfolio-cost-exposure"
+                    class="portfolio-exposure-panel"
+                >
+
+                    <div class="exposure-header">
+
+                        <div>
+
+                            <span class="section-eyebrow">
+                                Forecast Exposure
+                            </span>
+
+                            <h3>
+                                Budget vs Forecast at Completion
+                            </h3>
+
+                            <p>
+                                Compare approved budget with
+                                forecast completion cost and
+                                identify projects with the
+                                largest expected overruns.
+                            </p>
+
+                        </div>
+
+
+                        <div class="exposure-legend">
+
+                            <span>
+                                <i class="legend-square budget"></i>
+                                Budget
+                            </span>
+
+                            <span>
+                                <i class="legend-square forecast-over"></i>
+                                Over budget
+                            </span>
+
+                            <span>
+                                <i class="legend-square forecast-under"></i>
+                                Under budget
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div id="portfolio-exposure-chart">
+
+                        <div class="skeleton-chart">
+
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+            </section>
+
+
+
+            <!-- =============================================
+                 PROJECT PORTFOLIO
+                 ============================================= -->
+
+            <section
+                id="project-portfolio"
+                class="dashboard-section"
+            >
+
+                <div class="section-skeleton">
+
+                    <div class="skeleton-heading"></div>
+
+                    <div class="skeleton-table">
+
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =============================================
+                 SELECTED PROJECT
+                 ============================================= -->
+
+            <section
+                id="project-detail"
+                class="dashboard-section hidden"
+            >
+            </section>
+
+
+
+            <!-- =============================================
+                 DATA QUALITY
+                 ============================================= -->
+
+            <section
+                id="data-quality"
+                class="dashboard-section"
+            >
+
+                <div class="data-quality-section-header">
+
+                    <div>
+
+                        <span class="section-eyebrow">
+                            Data Governance
+                        </span>
+
+                        <h2>
+                            Validation & Data Quality
+                        </h2>
+
+                        <p>
+                            Transparent view of records entering
+                            the validation layer, accepted records,
+                            quarantined records and logged issue
+                            events.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =========================================
+                     VALIDATION TRANSPARENCY
+                     ========================================= -->
+
+                <div
+                    id="validation-transparency"
+                    class="validation-transparency"
+                >
+
+                    <div class="validation-stat">
+
+                        <span>
+                            Source Records
+                        </span>
+
+                        <strong id="dq-source-rows">
+                            —
+                        </strong>
+
+                        <small>
+                            Presented to validation
+                        </small>
+
+                    </div>
+
+
+                    <div class="validation-stat">
+
+                        <span>
+                            Accepted Records
+                        </span>
+
+                        <strong id="dq-accepted-rows">
+                            —
+                        </strong>
+
+                        <small>
+                            Loaded to analytical layer
+                        </small>
+
+                    </div>
+
+
+                    <div class="validation-stat">
+
+                        <span>
+                            Quarantined Records
+                        </span>
+
+                        <strong id="dq-quarantined-rows">
+                            —
+                        </strong>
+
+                        <small>
+                            Excluded after validation
+                        </small>
+
+                    </div>
+
+
+                    <div class="validation-stat">
+
+                        <span>
+                            Issue Events
+                        </span>
+
+                        <strong id="dq-issue-events">
+                            —
+                        </strong>
+
+                        <small>
+                            Logged validation observations
+                        </small>
+
+                    </div>
+
+
+                    <div class="validation-stat validation-stat-highlight">
+
+                        <span>
+                            Validation Pass Rate
+                        </span>
+
+                        <strong id="dq-validation-rate">
+                            —
+                        </strong>
+
+                        <small>
+                            Accepted ÷ Source
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="validation-definition-note">
+
+                    <strong>
+                        Validation semantics
+                    </strong>
+
+                    <p>
+                        Quarantined records are invalid source
+                        records excluded from the controlled
+                        analytical layer. Issue events are
+                        validation observations and may include
+                        multiple observations for the same record,
+                        so issue-event count does not need to equal
+                        quarantined-row count.
+                    </p>
+
+                </div>
+
+
+                <div id="data-quality-dashboard">
+
+                    <div class="section-skeleton">
+
+                        <div class="skeleton-heading"></div>
+
+                        <div class="skeleton-table">
+
+                            <div></div>
+                            <div></div>
+                            <div></div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =============================================
+                 FOOTER
+                 ============================================= -->
+
+            <footer class="dashboard-footer">
+
+                <div>
+
+                    <strong>
+                        ControlSight
+                    </strong>
+
+                    <span>
+                        Project Controls Intelligence Platform
+                    </span>
+
+                </div>
+
+
+                <div class="footer-meta">
+
+                    <span>
+                        Synthetic demonstration data
+                    </span>
+
+                    <span>
+                        Rules-based analytics
+                    </span>
+
+                    <span>
+                        Validation-controlled
+                    </span>
+
+                    <span>
+                        v1.1
+                    </span>
+
+                </div>
+
+            </footer>
+
+        </main>
+
+    </div>
+
+</div>
+
+
+
+<!-- =========================================================
+     DEMO ENVIRONMENT NOTICE
+     ========================================================= -->
+
+<div
+    id="demo-service-notice"
+    class="service-notice"
+>
+
+    <div>
+
+        <strong>
+            Demo environment
+        </strong>
+
+        <span>
+            The hosted service may take longer on its first
+            request after a period of inactivity.
+        </span>
+
+    </div>
+
+
+    <button
+        id="dismiss-service-notice"
+        type="button"
+        aria-label="Dismiss demo environment notice"
+    >
+        ×
+    </button>
+
+</div>
+
+
+
+<script src="/js/dashboard.js"></script>
+<script src="/js/polish.js"></script>
+
+    <script src="/js/upload.js"></script>
+    <script src="/js/attention-ui.js"></script>
+    <script src="/js/risk-cashflow-ui.js"></script>
+    <script src="/js/report-pack-ui.js"></script>
+    <script src="/js/change-control-ui.js"></script>
+    <script src="/js/drawer.js"></script>
+    <script src="/js/page-header.js"></script>
+    <script src="/js/footer-fix.js"></script>
+    <script src="/js/overview-v2.js"></script>
+</body>
+
+</html>

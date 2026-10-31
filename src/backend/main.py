@@ -904,6 +904,19 @@ def dashboard():
 
 
 app.mount(
+    "/assets",
+    StaticFiles(
+        directory=(
+            FRONTEND_PATH
+            /
+            "assets"
+        )
+    ),
+    name="assets",
+)
+
+
+app.mount(
     "/css",
     StaticFiles(
         directory=(

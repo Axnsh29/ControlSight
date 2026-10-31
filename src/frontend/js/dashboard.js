@@ -5067,3 +5067,65 @@ document.addEventListener(
     }
 
 })();
+
+
+/* CONTROLSIGHT DYNAMIC VIEW ROUTER SYNC */
+/*
+ * Secondary ControlSight modules add their sections and sidebar links
+ * after dashboard.js has initialised. Re-apply the active route whenever
+ * navigation items are added so only the selected application view is shown.
+ */
+function installDynamicViewRouterSync() {
+
+    const nav =
+        document.querySelector(
+            ".sidebar-nav"
+        );
+
+    if (!nav) {
+        return;
+    }
+
+    const observer =
+        new MutationObserver(
+            () => {
+
+                const currentHash =
+                    window.location.hash ||
+                    "#portfolio-overview";
+
+                window.requestAnimationFrame(
+                    () => {
+                        navigateToHash(
+                            currentHash,
+                            {
+                                updateHash: false,
+                                scroll: false
+                            }
+                        );
+                    }
+                );
+            }
+        );
+
+    observer.observe(
+        nav,
+        {
+            childList: true,
+            subtree: true
+        }
+    );
+}
+
+
+if (document.readyState === "loading") {
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        installDynamicViewRouterSync
+    );
+
+} else {
+
+    installDynamicViewRouterSync();
+}

@@ -1,0 +1,488 @@
+/* ============================================================
+   CONTROLSIGHT
+   OFF-CANVAS SIDEBAR — CLEAN DESKTOP LAYOUT
+   v1.1
+   ============================================================ */
+
+
+/* ============================================================
+   1. REMOVE OLD SIDEBAR SPACE
+   ============================================================ */
+
+html,
+body {
+    margin: 0 !important;
+    padding: 0 !important;
+
+    width: 100% !important;
+    max-width: none !important;
+
+    overflow-x: hidden !important;
+
+    background: #f4f7fb;
+}
+
+
+/*
+ * The old application layout reserved a column for .sidebar.
+ * The sidebar is now fixed/off-canvas, so that column must go.
+ *
+ * :has() lets us target the EXISTING layout container without
+ * guessing its class name.
+ */
+
+body *:has(> .sidebar) {
+    grid-template-columns:
+        minmax(0, 1fr) !important;
+
+    column-gap: 0 !important;
+}
+
+
+/*
+ * Parent containing the application topbar must occupy the
+ * complete available width rather than the old sidebar offset.
+ */
+
+body *:has(> .topbar) {
+    width: 100% !important;
+    max-width: none !important;
+
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+
+    padding-left: 0 !important;
+
+    flex:
+        1 1 100% !important;
+
+    box-sizing: border-box !important;
+
+    grid-column:
+        1 / -1 !important;
+}
+
+
+/* ============================================================
+   2. MAIN APPLICATION WIDTH
+   ============================================================ */
+
+.topbar,
+.dashboard-content {
+    width: 100% !important;
+    max-width: none !important;
+
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+
+    box-sizing: border-box !important;
+}
+
+
+.dashboard-content {
+    padding-left: 32px !important;
+    padding-right: 32px !important;
+}
+
+
+/*
+ * Remove common legacy desktop sidebar offsets if any of these
+ * exist in the original application.
+ */
+
+.main-content,
+.main-wrapper,
+.dashboard-main,
+.dashboard-wrapper,
+.content-wrapper,
+.content-area,
+.workspace,
+.workspace-content {
+    margin-left: 0 !important;
+
+    width: 100% !important;
+    max-width: none !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/* ============================================================
+   3. SIDEBAR BECOMES TRUE OVERLAY DRAWER
+   ============================================================ */
+
+.sidebar {
+    position: fixed !important;
+
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+
+    z-index: 5000 !important;
+
+    width: 270px !important;
+    min-width: 270px !important;
+    max-width: 270px !important;
+
+    height: 100vh !important;
+
+    margin: 0 !important;
+
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+
+    transform:
+        translateX(-105%);
+
+    transition:
+        transform 0.22s
+        cubic-bezier(
+            0.4,
+            0,
+            0.2,
+            1
+        );
+
+    box-shadow:
+        18px 0 50px
+        rgba(
+            15,
+            23,
+            42,
+            0.24
+        );
+}
+
+
+.sidebar.drawer-open {
+    transform:
+        translateX(0);
+}
+
+
+/* ============================================================
+   4. BACKDROP
+   ============================================================ */
+
+.drawer-backdrop {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 4990;
+
+    visibility: hidden;
+
+    opacity: 0;
+
+    background:
+        rgba(
+            15,
+            23,
+            42,
+            0.38
+        );
+
+    backdrop-filter:
+        blur(2px);
+
+    transition:
+        opacity 0.18s ease,
+        visibility 0.18s ease;
+}
+
+
+.drawer-backdrop.visible {
+    visibility: visible;
+
+    opacity: 1;
+}
+
+
+/* ============================================================
+   5. TOP BAR
+   ============================================================ */
+
+.topbar {
+    min-height: 70px !important;
+
+    padding-left: 32px !important;
+    padding-right: 32px !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+
+    background: #ffffff;
+
+    border-bottom:
+        1px solid #e2e8f0;
+}
+
+
+/* ============================================================
+   6. HAMBURGER
+   ============================================================ */
+
+.drawer-toggle {
+    appearance: none;
+
+    flex: 0 0 auto;
+
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 40px;
+    height: 40px;
+
+    margin-right: 14px;
+
+    padding: 0;
+
+    color: #334155;
+
+    background: #ffffff;
+
+    border:
+        1px solid #d7e0ea;
+
+    border-radius: 9px;
+
+    cursor: pointer;
+
+    font-size: 20px;
+
+    line-height: 1;
+
+    box-shadow:
+        0 1px 3px
+        rgba(
+            15,
+            23,
+            42,
+            0.06
+        );
+}
+
+
+.drawer-toggle:hover {
+    color: #0f172a;
+
+    background: #f8fafc;
+
+    border-color: #bfcbd8;
+}
+
+
+.drawer-toggle:focus-visible {
+    outline:
+        3px solid
+        rgba(
+            37,
+            99,
+            235,
+            0.15
+        );
+
+    outline-offset: 2px;
+}
+
+
+/* ============================================================
+   7. DRAWER CLOSE
+   ============================================================ */
+
+.drawer-close {
+    position: absolute;
+
+    top: 16px;
+    right: 14px;
+
+    z-index: 4;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 32px;
+    height: 32px;
+
+    padding: 0;
+
+    color: #cbd5e1;
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            0.06
+        );
+
+    border:
+        1px solid
+        rgba(
+            255,
+            255,
+            255,
+            0.10
+        );
+
+    border-radius: 7px;
+
+    cursor: pointer;
+
+    font-size: 20px;
+}
+
+
+.drawer-close:hover {
+    color: #ffffff;
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            0.12
+        );
+}
+
+
+/* ============================================================
+   8. PAGE CONTENT
+   ============================================================ */
+
+.portfolio-overview,
+#project-detail,
+.data-quality-section {
+    width: 100% !important;
+    max-width: none !important;
+
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+
+    box-sizing: border-box !important;
+}
+
+
+.dashboard-content > section,
+.dashboard-content > div {
+    box-sizing: border-box;
+}
+
+
+/*
+ * Keep large cards aligned consistently.
+ */
+
+.dashboard-content {
+    max-width: 1600px !important;
+
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+
+/* ============================================================
+   9. BODY LOCK WHEN DRAWER OPEN
+   ============================================================ */
+
+body.drawer-visible {
+    overflow: hidden !important;
+}
+
+
+/* ============================================================
+   10. TABLE / CHART WIDTH
+   ============================================================ */
+
+.table-wrapper,
+.table-container,
+.cc-table-wrap,
+.rc-table-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    overflow-x: auto !important;
+}
+
+
+/* ============================================================
+   11. DESKTOP
+   ============================================================ */
+
+@media (min-width: 1100px) {
+
+    .topbar {
+        padding-left: 38px !important;
+        padding-right: 38px !important;
+    }
+
+
+    .dashboard-content {
+        padding-left: 38px !important;
+        padding-right: 38px !important;
+    }
+}
+
+
+/* ============================================================
+   12. TABLET
+   ============================================================ */
+
+@media (max-width: 900px) {
+
+    .sidebar {
+        width:
+            min(
+                290px,
+                86vw
+            ) !important;
+
+        min-width: 0 !important;
+        max-width: none !important;
+    }
+
+
+    .topbar {
+        padding-left: 18px !important;
+        padding-right: 18px !important;
+    }
+
+
+    .dashboard-content {
+        padding-left: 18px !important;
+        padding-right: 18px !important;
+    }
+}
+
+
+/* ============================================================
+   13. MOBILE
+   ============================================================ */
+
+@media (max-width: 520px) {
+
+    .topbar {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+
+    .dashboard-content {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+
+    .drawer-toggle {
+        width: 36px;
+        height: 36px;
+
+        margin-right: 10px;
+    }
+}

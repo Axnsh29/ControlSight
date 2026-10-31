@@ -1,0 +1,509 @@
+/* ============================================================
+   CONTROLSIGHT
+   SECONDARY PAGE STANDARDISATION
+   SAFE VERSION
+   ============================================================ */
+
+#data-quality,
+#change-control,
+#risk-cashflow,
+#upload-data,
+#report-pack,
+#attention-tuning {
+    width: 100% !important;
+    max-width: none !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+
+/* ============================================================
+   PAGE HEADERS ONLY
+   Do NOT globally style every h2/p inside the page.
+   ============================================================ */
+
+#data-quality .section-header,
+#change-control .section-header,
+#risk-cashflow .section-header,
+#upload-data .section-header,
+#report-pack .section-header,
+#attention-tuning .section-header,
+#data-quality .data-quality-section-header {
+    margin-bottom: 18px !important;
+}
+
+
+#data-quality .section-header h2,
+#change-control .section-header h2,
+#risk-cashflow .section-header h2,
+#upload-data .section-header h2,
+#report-pack .section-header h2,
+#attention-tuning .section-header h2,
+#data-quality .data-quality-section-header h2 {
+    margin: 0 0 6px !important;
+
+    color: #0f172a !important;
+
+    font-size: 24px !important;
+    font-weight: 760 !important;
+    line-height: 1.2 !important;
+}
+
+
+#data-quality .section-header p,
+#change-control .section-header p,
+#risk-cashflow .section-header p,
+#upload-data .section-header p,
+#report-pack .section-header p,
+#attention-tuning .section-header p,
+#data-quality .data-quality-section-header p {
+    margin: 0 !important;
+
+    color: #475569 !important;
+
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+}
+
+
+/* ============================================================
+   DARK HEROES
+   Restore intentional light text
+   ============================================================ */
+
+#attention-tuning .module-hero,
+#attention-tuning .attention-hero,
+#attention-tuning .attention-tuning-hero,
+
+#change-control .module-hero,
+#change-control .change-control-hero,
+
+#risk-cashflow .module-hero,
+#risk-cashflow .risk-cashflow-hero,
+
+#report-pack .module-hero,
+#report-pack .report-pack-hero,
+
+#upload-data .module-hero,
+#upload-data .upload-hero {
+    color: #ffffff !important;
+}
+
+
+/* hero headings */
+
+#attention-tuning .module-hero h1,
+#attention-tuning .module-hero h2,
+#attention-tuning .module-hero h3,
+#attention-tuning .attention-hero h1,
+#attention-tuning .attention-hero h2,
+#attention-tuning .attention-hero h3,
+#attention-tuning .attention-tuning-hero h1,
+#attention-tuning .attention-tuning-hero h2,
+#attention-tuning .attention-tuning-hero h3,
+
+#change-control .module-hero h1,
+#change-control .module-hero h2,
+#change-control .module-hero h3,
+#change-control .change-control-hero h1,
+#change-control .change-control-hero h2,
+#change-control .change-control-hero h3,
+
+#risk-cashflow .module-hero h1,
+#risk-cashflow .module-hero h2,
+#risk-cashflow .module-hero h3,
+#risk-cashflow .risk-cashflow-hero h1,
+#risk-cashflow .risk-cashflow-hero h2,
+#risk-cashflow .risk-cashflow-hero h3,
+
+#report-pack .module-hero h1,
+#report-pack .module-hero h2,
+#report-pack .module-hero h3,
+#report-pack .report-pack-hero h1,
+#report-pack .report-pack-hero h2,
+#report-pack .report-pack-hero h3,
+
+#upload-data .module-hero h1,
+#upload-data .module-hero h2,
+#upload-data .module-hero h3,
+#upload-data .upload-hero h1,
+#upload-data .upload-hero h2,
+#upload-data .upload-hero h3 {
+    color: #ffffff !important;
+
+    opacity: 1 !important;
+}
+
+
+/* hero descriptions */
+
+#attention-tuning .module-hero p,
+#attention-tuning .attention-hero p,
+#attention-tuning .attention-tuning-hero p,
+
+#change-control .module-hero p,
+#change-control .change-control-hero p,
+
+#risk-cashflow .module-hero p,
+#risk-cashflow .risk-cashflow-hero p,
+
+#report-pack .module-hero p,
+#report-pack .report-pack-hero p,
+
+#upload-data .module-hero p,
+#upload-data .upload-hero p {
+    color: #cbd5e1 !important;
+
+    opacity: 1 !important;
+}
+
+
+/* hero eyebrow */
+
+#attention-tuning .module-hero .section-eyebrow,
+#attention-tuning .attention-hero .section-eyebrow,
+#attention-tuning .attention-tuning-hero .section-eyebrow,
+
+#change-control .module-hero .section-eyebrow,
+#change-control .change-control-hero .section-eyebrow,
+
+#risk-cashflow .module-hero .section-eyebrow,
+#risk-cashflow .risk-cashflow-hero .section-eyebrow,
+
+#report-pack .module-hero .section-eyebrow,
+#report-pack .report-pack-hero .section-eyebrow,
+
+#upload-data .module-hero .section-eyebrow,
+#upload-data .upload-hero .section-eyebrow {
+    color: #93c5fd !important;
+
+    opacity: 1 !important;
+}
+
+
+/* ============================================================
+   NORMAL PANELS
+   ============================================================ */
+
+#data-quality .panel,
+#change-control .panel,
+#risk-cashflow .panel,
+#upload-data .panel,
+#report-pack .panel,
+#attention-tuning .panel,
+
+#data-quality .card,
+#change-control .card,
+#risk-cashflow .card,
+#upload-data .card,
+#report-pack .card,
+#attention-tuning .card {
+    background: #ffffff !important;
+
+    border: 1px solid #dfe6ee !important;
+    border-radius: 10px !important;
+
+    box-shadow:
+        0 2px 10px
+        rgba(15, 23, 42, 0.04) !important;
+}
+
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+
+#data-quality table,
+#change-control table,
+#risk-cashflow table,
+#upload-data table,
+#report-pack table,
+#attention-tuning table {
+    font-size: 13px !important;
+}
+
+
+#data-quality th,
+#change-control th,
+#risk-cashflow th,
+#upload-data th,
+#report-pack th,
+#attention-tuning th {
+    padding: 11px 12px !important;
+
+    color: #64748b !important;
+
+    background: #f8fafc !important;
+
+    font-size: 12px !important;
+    font-weight: 750 !important;
+}
+
+
+#data-quality td,
+#change-control td,
+#risk-cashflow td,
+#upload-data td,
+#report-pack td,
+#attention-tuning td {
+    padding: 12px !important;
+
+    color: #334155 !important;
+
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+}
+
+
+/* ============================================================
+   FORMS
+   ============================================================ */
+
+#data-quality input,
+#change-control input,
+#risk-cashflow input,
+#upload-data input,
+#report-pack input,
+#attention-tuning input,
+
+#data-quality select,
+#change-control select,
+#risk-cashflow select,
+#upload-data select,
+#report-pack select,
+#attention-tuning select {
+    min-height: 38px !important;
+
+    font-size: 14px !important;
+
+    border-radius: 7px !important;
+}
+
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+#data-quality button,
+#change-control button,
+#risk-cashflow button,
+#upload-data button,
+#report-pack button,
+#attention-tuning button {
+    min-height: 36px;
+
+    font-size: 13px !important;
+    font-weight: 700 !important;
+
+    border-radius: 7px !important;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 700px) {
+
+    #data-quality .section-header h2,
+    #change-control .section-header h2,
+    #risk-cashflow .section-header h2,
+    #upload-data .section-header h2,
+    #report-pack .section-header h2,
+    #attention-tuning .section-header h2 {
+        font-size: 21px !important;
+    }
+
+}
+
+/* ============================================================
+   DARK HERO BANNERS — ONE SHARED DESIGN
+   ============================================================ */
+
+#attention-tuning .module-hero,
+#attention-tuning .attention-hero,
+#attention-tuning .attention-tuning-hero,
+
+#upload-data .module-hero,
+#upload-data .upload-hero,
+
+#change-control .module-hero,
+#change-control .change-control-hero,
+
+#risk-cashflow .module-hero,
+#risk-cashflow .risk-cashflow-hero,
+
+#report-pack .module-hero,
+#report-pack .report-pack-hero {
+    box-sizing: border-box !important;
+
+    min-height: 104px !important;
+
+    padding:
+        20px
+        22px !important;
+
+    background:
+        linear-gradient(
+            100deg,
+            #0f1f35,
+            #223b59
+        ) !important;
+
+    border: 0 !important;
+
+    border-radius: 10px !important;
+
+    color: #ffffff !important;
+}
+
+
+/* EYEBROW */
+
+#attention-tuning .module-hero .section-eyebrow,
+#attention-tuning .attention-hero .section-eyebrow,
+#attention-tuning .attention-tuning-hero .section-eyebrow,
+
+#upload-data .module-hero .section-eyebrow,
+#upload-data .upload-hero .section-eyebrow,
+
+#change-control .module-hero .section-eyebrow,
+#change-control .change-control-hero .section-eyebrow,
+
+#risk-cashflow .module-hero .section-eyebrow,
+#risk-cashflow .risk-cashflow-hero .section-eyebrow,
+
+#report-pack .module-hero .section-eyebrow,
+#report-pack .report-pack-hero .section-eyebrow {
+    display: block !important;
+
+    margin:
+        0
+        0
+        7px !important;
+
+    color: #93c5fd !important;
+
+    font-size: 10px !important;
+
+    font-weight: 800 !important;
+
+    line-height: 1 !important;
+
+    letter-spacing: 0.07em !important;
+
+    text-transform: uppercase !important;
+}
+
+
+/* TITLE */
+
+#attention-tuning .module-hero h1,
+#attention-tuning .module-hero h2,
+#attention-tuning .module-hero h3,
+#attention-tuning .attention-hero h1,
+#attention-tuning .attention-hero h2,
+#attention-tuning .attention-hero h3,
+#attention-tuning .attention-tuning-hero h1,
+#attention-tuning .attention-tuning-hero h2,
+#attention-tuning .attention-tuning-hero h3,
+
+#upload-data .module-hero h1,
+#upload-data .module-hero h2,
+#upload-data .module-hero h3,
+#upload-data .upload-hero h1,
+#upload-data .upload-hero h2,
+#upload-data .upload-hero h3,
+
+#change-control .module-hero h1,
+#change-control .module-hero h2,
+#change-control .module-hero h3,
+#change-control .change-control-hero h1,
+#change-control .change-control-hero h2,
+#change-control .change-control-hero h3,
+
+#risk-cashflow .module-hero h1,
+#risk-cashflow .module-hero h2,
+#risk-cashflow .module-hero h3,
+#risk-cashflow .risk-cashflow-hero h1,
+#risk-cashflow .risk-cashflow-hero h2,
+#risk-cashflow .risk-cashflow-hero h3,
+
+#report-pack .module-hero h1,
+#report-pack .module-hero h2,
+#report-pack .module-hero h3,
+#report-pack .report-pack-hero h1,
+#report-pack .report-pack-hero h2,
+#report-pack .report-pack-hero h3 {
+    margin:
+        0
+        0
+        6px !important;
+
+    color: #ffffff !important;
+
+    font-size: 20px !important;
+
+    font-weight: 760 !important;
+
+    line-height: 1.2 !important;
+
+    letter-spacing: -0.015em !important;
+
+    opacity: 1 !important;
+}
+
+
+/* DESCRIPTION */
+
+#attention-tuning .module-hero p,
+#attention-tuning .attention-hero p,
+#attention-tuning .attention-tuning-hero p,
+
+#upload-data .module-hero p,
+#upload-data .upload-hero p,
+
+#change-control .module-hero p,
+#change-control .change-control-hero p,
+
+#risk-cashflow .module-hero p,
+#risk-cashflow .risk-cashflow-hero p,
+
+#report-pack .module-hero p,
+#report-pack .report-pack-hero p {
+    max-width: 780px !important;
+
+    margin: 0 !important;
+
+    color: #cbd5e1 !important;
+
+    font-size: 12px !important;
+
+    font-weight: 400 !important;
+
+    line-height: 1.5 !important;
+
+    opacity: 1 !important;
+}
+
+
+/* RIGHT-SIDE BADGES */
+
+#attention-tuning .module-hero > :last-child,
+#attention-tuning .attention-hero > :last-child,
+#attention-tuning .attention-tuning-hero > :last-child,
+
+#upload-data .module-hero > :last-child,
+#upload-data .upload-hero > :last-child,
+
+#change-control .module-hero > :last-child,
+#change-control .change-control-hero > :last-child,
+
+#risk-cashflow .module-hero > :last-child,
+#risk-cashflow .risk-cashflow-hero > :last-child,
+
+#report-pack .module-hero > :last-child,
+#report-pack .report-pack-hero > :last-child {
+    flex-shrink: 0;
+}

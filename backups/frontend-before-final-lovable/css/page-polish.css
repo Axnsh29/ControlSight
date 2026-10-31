@@ -1,0 +1,296 @@
+/* ============================================================
+   CONTROLSIGHT
+   GLOBAL PAGE POLISH
+   v1.0.0
+   ============================================================ */
+
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+
+.topbar {
+    min-height: 66px !important;
+
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+}
+
+
+.topbar-eyebrow {
+    margin-bottom: 2px !important;
+
+    font-size: 9px !important;
+
+    font-weight: 800 !important;
+
+    letter-spacing: 0.10em !important;
+}
+
+
+.topbar h1 {
+    margin: 0 !important;
+
+    font-size: 18px !important;
+
+    line-height: 1.2 !important;
+
+    letter-spacing: -0.015em;
+}
+
+
+/* ============================================================
+   DASHBOARD CONTENT
+   ============================================================ */
+
+.dashboard-content {
+    padding-top: 22px !important;
+
+    padding-bottom: 48px !important;
+}
+
+
+/* ============================================================
+   REPORTING PERIOD
+   ============================================================ */
+
+.reporting-period-section,
+.reporting-period-panel,
+.reporting-context,
+#reporting-period-section {
+    margin-bottom: 18px !important;
+}
+
+
+/*
+ * The reporting-period card should feel like a toolbar,
+ * not a full dashboard section.
+ */
+
+.reporting-period-section,
+.reporting-period-panel {
+    min-height: 0 !important;
+
+    padding-top: 14px !important;
+    padding-bottom: 14px !important;
+}
+
+
+.reporting-period-section h2,
+.reporting-period-panel h2 {
+    margin-top: 0 !important;
+    margin-bottom: 3px !important;
+
+    font-size: 16px !important;
+}
+
+
+.reporting-period-section p,
+.reporting-period-panel p {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+
+    font-size: 11px !important;
+}
+
+
+/* ============================================================
+   PRIMARY PAGE SECTIONS
+   ============================================================ */
+
+.portfolio-overview,
+#project-portfolio,
+#project-detail,
+#data-quality,
+#change-control,
+#risk-cashflow,
+#attention-tuning,
+#report-pack,
+#upload-data,
+#workflow {
+    margin-top: 0 !important;
+
+    padding-top: 0 !important;
+}
+
+
+/* ============================================================
+   SECTION HEADERS
+   ============================================================ */
+
+.section-header {
+    margin-bottom: 18px !important;
+}
+
+
+.section-header h2 {
+    margin-top: 0 !important;
+
+    margin-bottom: 5px !important;
+
+    font-size: 22px !important;
+
+    line-height: 1.2 !important;
+
+    letter-spacing: -0.02em;
+}
+
+
+.section-header p {
+    margin-top: 0 !important;
+
+    font-size: 12px !important;
+
+    line-height: 1.55 !important;
+}
+
+
+/* ============================================================
+   KPI CARDS
+   ============================================================ */
+
+.kpi-card,
+.metric-card,
+.summary-card {
+    min-height: 92px !important;
+
+    padding: 16px !important;
+}
+
+
+.kpi-card strong,
+.metric-card strong,
+.summary-card strong {
+    font-size: 20px !important;
+
+    line-height: 1.15 !important;
+}
+
+
+/* ============================================================
+   DATA QUALITY
+   ============================================================ */
+
+#data-quality table {
+    font-size: 12px !important;
+}
+
+
+#data-quality th {
+    padding: 11px 12px !important;
+
+    font-size: 10px !important;
+}
+
+
+#data-quality td {
+    padding: 11px 12px !important;
+
+    font-size: 11px !important;
+
+    line-height: 1.4 !important;
+}
+
+
+#data-quality .data-quality-section-header {
+    margin-bottom: 18px !important;
+}
+
+
+/* ============================================================
+   PORTFOLIO / PROJECT CARDS
+   ============================================================ */
+
+.portfolio-overview > * + *,
+#project-portfolio > * + *,
+#project-detail > * + *,
+#data-quality > * + * {
+    margin-top: 18px;
+}
+
+
+/* ============================================================
+   INPUTS
+   ============================================================ */
+
+.dashboard-content input,
+.dashboard-content select,
+.dashboard-content textarea {
+    font-size: 12px !important;
+}
+
+
+.dashboard-content select {
+    min-height: 38px !important;
+}
+
+
+/* ============================================================
+   TABLE READABILITY
+   ============================================================ */
+
+.dashboard-content table {
+    font-size: 12px;
+}
+
+
+.dashboard-content th {
+    font-size: 10px !important;
+
+    font-weight: 800 !important;
+
+    letter-spacing: 0.02em;
+}
+
+
+.dashboard-content td {
+    font-size: 11px !important;
+}
+
+
+/* ============================================================
+   REMOVE EXCESSIVE EMPTY SPACE
+   ============================================================ */
+
+.dashboard-content br + br {
+    display: none;
+}
+
+
+/* ============================================================
+   LAPTOP
+   ============================================================ */
+
+@media (max-width: 1200px) {
+
+    .dashboard-content {
+        padding-top: 18px !important;
+    }
+
+
+    .section-header h2 {
+        font-size: 20px !important;
+    }
+}
+
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (max-width: 700px) {
+
+    .topbar h1 {
+        font-size: 16px !important;
+    }
+
+
+    .dashboard-content {
+        padding-top: 14px !important;
+    }
+
+
+    .section-header h2 {
+        font-size: 19px !important;
+    }
+}

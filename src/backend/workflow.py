@@ -19,7 +19,9 @@ router = APIRouter(
 # DATABASE
 # ============================================================
 
-DATABASE_PATH = "data/database/controlsight.db"
+DATABASE_PATH = (
+    "data/database/controlsight.db"
+)
 
 
 def get_connection():
@@ -37,29 +39,22 @@ def get_connection():
 # MODELS
 # ============================================================
 
-class CommentaryUpdate(BaseModel):
-
-    project_code: str
-    reporting_period: str
-
-    cost_commentary: str | None = None
-    progress_commentary: str | None = None
-    schedule_commentary: str | None = None
-    procurement_commentary: str | None = None
-
-
 class ActionCreate(BaseModel):
 
     project_code: str
+
     reporting_period: str
 
     category: str
+
     issue: str
 
     owner_role: str
+
     due_date: str
 
     status: str = "Open"
+
     priority: str = "Medium"
 
     source: str = "Management Review"
@@ -67,15 +62,109 @@ class ActionCreate(BaseModel):
 
 class ActionUpdate(BaseModel):
 
-    issue: str | None = None
     owner_role: str | None = None
+
     due_date: str | None = None
+
     status: str | None = None
+
     priority: str | None = None
+
+    issue: str | None = None
+
+
+class CommentaryUpdate(BaseModel):
+
+    project_code: str
+
+    reporting_period: str
+
+    cost_commentary: str | None = None
+
+    progress_commentary: str | None = None
+
+    schedule_commentary: str | None = None
+
+    procurement_commentary: str | None = None
 
 
 # ============================================================
-# CONSTANTS
+# TABLE INITIALISATION
+# ============================================================
+
+def initialise_workflow_tables():
+
+    with get_connection() as connection:
+
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS workflow_actions (
+
+                action_id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                project_code TEXT NOT NULL,
+
+                reporting_period TEXT NOT NULL,
+
+                category TEXT NOT NULL,
+
+                issue TEXT NOT NULL,
+
+                owner_role TEXT NOT NULL,
+
+                due_date TEXT,
+
+                status TEXT NOT NULL
+                    DEFAULT 'Open',
+
+                priority TEXT NOT NULL
+                    DEFAULT 'Medium',
+
+                source TEXT NOT NULL
+                    DEFAULT 'Management Review',
+
+                created_date TEXT NOT NULL,
+
+                updated_date TEXT NOT NULL
+            )
+            """
+        )
+
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS workflow_commentary (
+
+                commentary_id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                project_code TEXT NOT NULL,
+
+                reporting_period TEXT NOT NULL,
+
+                cost_commentary TEXT,
+
+                progress_commentary TEXT,
+
+                schedule_commentary TEXT,
+
+                procurement_commentary TEXT,
+
+                created_date TEXT NOT NULL,
+
+                updated_date TEXT NOT NULL,
+
+                UNIQUE(
+                    project_code,
+                    reporting_period
+                )
+            )
+            """
+        )
+
+        connection.commit()
+
+
+# ============================================================
+# VALIDATION HELPERS
 # ============================================================
 
 VALID_STATUSES = {
@@ -106,137 +195,91 @@ VALID_CATEGORIES = {
 
 OWNER_ROLE_MAPPING = {
 
-    "Cost":
-        "Cost Control / Commercial",
+    "Cost": (
+        "Cost Control / Commercial"
+    ),
 
-    "Progress":
-        "Planning / Project Controls",
+    "Progress": (
+        "Planning / Project Controls"
+    ),
 
-    "Schedule":
-        "Planning / Project Manager",
+    "Schedule": (
+        "Planning / Project Manager"
+    ),
 
-    "Procurement":
-        "Procurement",
+    "Procurement": (
+        "Procurement"
+    ),
 
-    "Data Quality":
-        "Data / Project Controls",
+    "Data Quality": (
+        "Data / Project Controls"
+    ),
 
-    "Forecast Credibility":
-        "Cost Control / Commercial",
+    "Forecast Credibility": (
+        "Cost Control / Commercial"
+    ),
 }
 
 
-# ============================================================
-# WORKFLOW TABLES
-# ============================================================
+def validate_action_fields(
+    category,
+    status,
+    priority,
+):
 
-def initialise_workflow_tables():
+    if category not in VALID_CATEGORIES:
 
-    with get_connection() as connection:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Invalid action category"
+            ),
+        )
 
-        connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS workflow_commentary (
+    if status not in VALID_STATUSES:
 
-                commentary_id
-                    INTEGER PRIMARY KEY AUTOINCREMENT,
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Invalid action status"
+            ),
+        )
 
-                project_code
-                    TEXT NOT NULL,
+    if priority not in VALID_PRIORITIES:
 
-                reporting_period
-                    TEXT NOT NULL,
-
-                cost_commentary
-                    TEXT,
-
-                progress_commentary
-                    TEXT,
-
-                schedule_commentary
-                    TEXT,
-
-                procurement_commentary
-                    TEXT,
-
-                created_date
-                    TEXT NOT NULL,
-
-                updated_date
-                    TEXT NOT NULL,
-
-                UNIQUE(
-                    project_code,
-                    reporting_period
-                )
-            )
-            """
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Invalid action priority"
+            ),
         )
 
 
-        connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS workflow_actions (
-
-                action_id
-                    INTEGER PRIMARY KEY AUTOINCREMENT,
-
-                project_code
-                    TEXT NOT NULL,
-
-                reporting_period
-                    TEXT NOT NULL,
-
-                category
-                    TEXT NOT NULL,
-
-                issue
-                    TEXT NOT NULL,
-
-                owner_role
-                    TEXT NOT NULL,
-
-                due_date
-                    TEXT,
-
-                status
-                    TEXT NOT NULL
-                    DEFAULT 'Open',
-
-                priority
-                    TEXT NOT NULL
-                    DEFAULT 'Medium',
-
-                source
-                    TEXT NOT NULL
-                    DEFAULT 'Management Review',
-
-                created_date
-                    TEXT NOT NULL,
-
-                updated_date
-                    TEXT NOT NULL
-            )
-            """
-        )
-
-
-        connection.commit()
-
-
 # ============================================================
-# HELPERS
+# GENERATE MANAGEMENT COMMENTARY
 # ============================================================
 
-def get_project_scorecard(
+def generate_management_commentary(
     project_code: str,
+    reporting_period: str,
 ):
 
     with get_connection() as connection:
 
-        row = connection.execute(
+        project = connection.execute(
             """
-            SELECT *
+            SELECT
+                project_code,
+                project_name,
+                approved_budget,
+                forecast_at_completion,
+                forecast_variance,
+                forecast_variance_pct,
+                planned_progress_pct,
+                actual_progress_pct,
+                progress_variance_pct,
+                forecast_credibility_gap_pct,
+                forecast_credibility_status
 
             FROM report_management_scorecard
 
@@ -247,172 +290,245 @@ def get_project_scorecard(
             ),
         ).fetchone()
 
+        if project is None:
 
-    if row is None:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    f"Project {project_code} "
+                    "not found"
+                ),
+            )
 
-        raise HTTPException(
-            status_code=404,
-            detail=f"Project {project_code} not found",
-        )
+        schedule = connection.execute(
+            """
+            SELECT
 
+                SUM(
+                    CASE
+                        WHEN delayed_activity_flag = 1
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS delayed_activities,
 
-    return dict(row)
+                SUM(
+                    CASE
+                        WHEN is_critical = 1
+                        AND delayed_activity_flag = 1
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS critical_delayed_activities
 
+            FROM fact_schedule
 
-def value_from_project(
-    project,
-    key,
-    default=0,
-):
+            WHERE project_code = ?
+            """,
+            (
+                project_code,
+            ),
+        ).fetchone()
 
-    value = project.get(
-        key,
-        default,
-    )
+        procurement = connection.execute(
+            """
+            SELECT
 
-    if value is None:
-        return default
+                SUM(
+                    CASE
+                        WHEN delayed_delivery_flag = 1
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS delayed_items,
 
-    return value
+                SUM(
+                    CASE
+                        WHEN critical_delay_flag = 1
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS critical_delays
 
+            FROM fact_procurement
 
-def validate_action(
-    category,
-    status,
-    priority,
-):
-
-    if category not in VALID_CATEGORIES:
-
-        raise HTTPException(
-            status_code=422,
-            detail="Invalid action category",
-        )
-
-
-    if status not in VALID_STATUSES:
-
-        raise HTTPException(
-            status_code=422,
-            detail="Invalid action status",
-        )
-
-
-    if priority not in VALID_PRIORITIES:
-
-        raise HTTPException(
-            status_code=422,
-            detail="Invalid action priority",
-        )
-
-
-# ============================================================
-# GENERATED MANAGEMENT COMMENTARY
-# ============================================================
-
-def generate_management_commentary(
-    project_code: str,
-    reporting_period: str,
-):
-
-    project = get_project_scorecard(
-        project_code
-    )
-
-
-    project_name = value_from_project(
-        project,
-        "project_name",
-        project_code,
-    )
+            WHERE project_code = ?
+            """,
+            (
+                project_code,
+            ),
+        ).fetchone()
 
 
     forecast_variance_pct = float(
-        value_from_project(
-            project,
-            "forecast_variance_pct",
-            0,
-        )
+        project[
+            "forecast_variance_pct"
+        ]
+        or 0
     )
 
-
-    progress_variance_pct = float(
-        value_from_project(
-            project,
-            "progress_variance_pct",
-            0,
-        )
+    progress_variance = float(
+        project[
+            "progress_variance_pct"
+        ]
+        or 0
     )
 
+    credibility_gap = float(
+        project[
+            "forecast_credibility_gap_pct"
+        ]
+        or 0
+    )
 
-    credibility_gap_pct = float(
-        value_from_project(
-            project,
-            "forecast_credibility_gap_pct",
-            0,
-        )
+    delayed_activities = int(
+        schedule[
+            "delayed_activities"
+        ]
+        or 0
+    )
+
+    critical_delays = int(
+        schedule[
+            "critical_delayed_activities"
+        ]
+        or 0
+    )
+
+    delayed_items = int(
+        procurement[
+            "delayed_items"
+        ]
+        or 0
+    )
+
+    critical_procurement = int(
+        procurement[
+            "critical_delays"
+        ]
+        or 0
     )
 
 
     # --------------------------------------------------------
-    # COST
+    # COST COMMENTARY
     # --------------------------------------------------------
 
     if forecast_variance_pct <= -10:
 
         cost_commentary = (
-            "Forecast cost remains materially above "
-            "the approved budget and requires active "
-            "cost-control review."
+            "Forecast cost remains materially "
+            "above the approved budget and "
+            "requires active cost-control review."
         )
 
     elif forecast_variance_pct <= -5:
 
         cost_commentary = (
-            "Forecast cost pressure remains above "
-            "management tolerance and should continue "
-            "to be monitored."
+            "Forecast cost pressure remains "
+            "above management tolerance and "
+            "should continue to be monitored."
         )
 
     else:
 
         cost_commentary = (
-            "Current forecast remains broadly within "
-            "defined cost tolerance."
+            "Current forecast remains broadly "
+            "within defined cost tolerance."
         )
 
 
     # --------------------------------------------------------
-    # PROGRESS
+    # PROGRESS COMMENTARY
     # --------------------------------------------------------
 
-    if progress_variance_pct <= -10:
+    if progress_variance <= -10:
 
         progress_commentary = (
-            "Actual progress is materially behind plan "
-            "and recovery actions should be reviewed."
+            "Actual progress is materially "
+            "behind plan and recovery actions "
+            "should be reviewed."
         )
 
-    elif progress_variance_pct <= -5:
+    elif progress_variance <= -5:
 
         progress_commentary = (
-            "Progress remains behind plan and requires "
-            "continued planning review."
+            "Progress remains behind plan and "
+            "requires continued planning review."
         )
 
     else:
 
         progress_commentary = (
-            "Progress is currently within the defined "
-            "management tolerance."
+            "Progress is currently within the "
+            "defined management tolerance."
         )
 
 
     # --------------------------------------------------------
-    # FORECAST CREDIBILITY
+    # SCHEDULE COMMENTARY
     # --------------------------------------------------------
 
-    if credibility_gap_pct >= 20:
+    if critical_delays > 0:
+
+        schedule_commentary = (
+            f"{critical_delays} critical "
+            "schedule activities are delayed. "
+            "Critical-path recovery should be "
+            "reviewed by Planning and the "
+            "Project Manager."
+        )
+
+    elif delayed_activities > 0:
+
+        schedule_commentary = (
+            f"{delayed_activities} activities "
+            "are delayed, although no current "
+            "critical activity delay is recorded."
+        )
+
+    else:
+
+        schedule_commentary = (
+            "No material schedule exception "
+            "is currently identified."
+        )
+
+
+    # --------------------------------------------------------
+    # PROCUREMENT COMMENTARY
+    # --------------------------------------------------------
+
+    if critical_procurement > 0:
+
+        procurement_commentary = (
+            f"{critical_procurement} critical "
+            "procurement deliveries remain "
+            "delayed and require supplier "
+            "recovery action."
+        )
+
+    elif delayed_items > 0:
+
+        procurement_commentary = (
+            f"{delayed_items} procurement items "
+            "are delayed and should remain under "
+            "delivery review."
+        )
+
+    else:
+
+        procurement_commentary = (
+            "No material procurement delivery "
+            "exception is currently identified."
+        )
+
+
+    # --------------------------------------------------------
+    # FORECAST CREDIBILITY NOTE
+    # --------------------------------------------------------
+
+    if credibility_gap >= 20:
 
         forecast_note = (
             "Forecast credibility is Critical. "
@@ -420,74 +536,73 @@ def generate_management_commentary(
             "proxy is materially above reported FAC."
         )
 
-    elif credibility_gap_pct >= 10:
+    elif credibility_gap >= 10:
 
         forecast_note = (
-            "Forecast credibility is High and the "
-            "reported FAC should be challenged against "
-            "current cost and physical progress."
+            "Forecast credibility is High and "
+            "reported FAC should be challenged "
+            "against current progress and cost."
         )
 
-    elif credibility_gap_pct >= 5:
+    elif credibility_gap >= 5:
 
         forecast_note = (
-            "Forecast credibility is on Watch and "
-            "should remain under review."
+            "Forecast credibility is on Watch."
         )
 
     else:
 
         forecast_note = (
-            "No material forecast credibility exception "
-            "is currently identified."
+            "No material forecast credibility "
+            "exception is identified."
         )
 
 
     return {
+        "project_code": (
+            project_code
+        ),
 
-        "project_code":
-            project_code,
+        "project_name": (
+            project[
+                "project_name"
+            ]
+        ),
 
-        "project_name":
-            project_name,
+        "reporting_period": (
+            reporting_period
+        ),
 
-        "reporting_period":
-            reporting_period,
+        "cost_commentary": (
+            cost_commentary
+        ),
 
-        "cost_commentary":
-            cost_commentary,
+        "progress_commentary": (
+            progress_commentary
+        ),
 
-        "progress_commentary":
-            progress_commentary,
+        "schedule_commentary": (
+            schedule_commentary
+        ),
 
-        "schedule_commentary":
-            (
-                "Schedule commentary will be maintained "
-                "through the project-controls workflow."
-            ),
+        "procurement_commentary": (
+            procurement_commentary
+        ),
 
-        "procurement_commentary":
-            (
-                "Procurement commentary will be maintained "
-                "through the project-controls workflow."
-            ),
+        "forecast_credibility_note": (
+            forecast_note
+        ),
 
-        "forecast_credibility_note":
-            forecast_note,
+        "generated_by": (
+            "Deterministic management rules"
+        ),
 
-        "generated_by":
-            "Deterministic management rules",
-
-        "ai_generated":
-            False,
-
-        "saved_commentary":
-            False,
+        "ai_generated": False,
     }
 
 
 # ============================================================
-# COMMENTARY ENDPOINTS
+# COMMENTARY API
 # ============================================================
 
 @router.get(
@@ -500,18 +615,19 @@ def get_project_commentary(
 
     initialise_workflow_tables()
 
-
-    generated = generate_management_commentary(
-        project_code,
-        reporting_period,
-    )
-
-
     with get_connection() as connection:
 
         saved = connection.execute(
             """
-            SELECT *
+            SELECT
+                project_code,
+                reporting_period,
+                cost_commentary,
+                progress_commentary,
+                schedule_commentary,
+                procurement_commentary,
+                created_date,
+                updated_date
 
             FROM workflow_commentary
 
@@ -526,42 +642,60 @@ def get_project_commentary(
         ).fetchone()
 
 
+    generated = (
+        generate_management_commentary(
+            project_code,
+            reporting_period,
+        )
+    )
+
+
     if saved is None:
 
-        return generated
+        return {
+            **generated,
+
+            "saved_commentary": False,
+        }
 
 
-    saved = dict(saved)
+    result = dict(
+        saved
+    )
 
 
-    return {
+    result[
+        "project_name"
+    ] = generated[
+        "project_name"
+    ]
 
-        **generated,
 
-        "cost_commentary":
-            saved["cost_commentary"],
+    result[
+        "forecast_credibility_note"
+    ] = generated[
+        "forecast_credibility_note"
+    ]
 
-        "progress_commentary":
-            saved["progress_commentary"],
 
-        "schedule_commentary":
-            saved["schedule_commentary"],
+    result[
+        "generated_by"
+    ] = (
+        "Saved management commentary"
+    )
 
-        "procurement_commentary":
-            saved["procurement_commentary"],
 
-        "created_date":
-            saved["created_date"],
+    result[
+        "ai_generated"
+    ] = False
 
-        "updated_date":
-            saved["updated_date"],
 
-        "generated_by":
-            "Saved management commentary",
+    result[
+        "saved_commentary"
+    ] = True
 
-        "saved_commentary":
-            True,
-    }
+
+    return result
 
 
 @router.put(
@@ -574,16 +708,24 @@ def save_project_commentary(
 
     initialise_workflow_tables()
 
-
-    if project_code != payload.project_code:
+    if (
+        project_code
+        !=
+        payload.project_code
+    ):
 
         raise HTTPException(
             status_code=422,
-            detail="Project code mismatch",
+            detail=(
+                "Project code mismatch"
+            ),
         )
 
 
-    today = date.today().isoformat()
+    today = (
+        date.today()
+        .isoformat()
+    )
 
 
     with get_connection() as connection:
@@ -600,11 +742,10 @@ def save_project_commentary(
                 procurement_commentary,
                 created_date,
                 updated_date
+
             )
 
-            VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?
-            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 
             ON CONFLICT(
                 project_code,
@@ -640,28 +781,28 @@ def save_project_commentary(
             ),
         )
 
-
         connection.commit()
 
 
     return {
+        "success": True,
 
-        "success":
-            True,
+        "project_code": (
+            project_code
+        ),
 
-        "project_code":
-            project_code,
+        "reporting_period": (
+            payload.reporting_period
+        ),
 
-        "reporting_period":
-            payload.reporting_period,
-
-        "message":
-            "Management commentary saved",
+        "message": (
+            "Management commentary saved"
+        ),
     }
 
 
 # ============================================================
-# ACTION LOG ENDPOINTS
+# ACTION LOG
 # ============================================================
 
 @router.get(
@@ -673,7 +814,6 @@ def get_project_actions(
 ):
 
     initialise_workflow_tables()
-
 
     with get_connection() as connection:
 
@@ -693,9 +833,15 @@ def get_project_actions(
 
                     CASE priority
 
-                        WHEN 'Critical' THEN 1
-                        WHEN 'High' THEN 2
-                        WHEN 'Medium' THEN 3
+                        WHEN 'Critical'
+                        THEN 1
+
+                        WHEN 'High'
+                        THEN 2
+
+                        WHEN 'Medium'
+                        THEN 3
+
                         ELSE 4
 
                     END,
@@ -722,9 +868,15 @@ def get_project_actions(
 
                     CASE priority
 
-                        WHEN 'Critical' THEN 1
-                        WHEN 'High' THEN 2
-                        WHEN 'Medium' THEN 3
+                        WHEN 'Critical'
+                        THEN 1
+
+                        WHEN 'High'
+                        THEN 2
+
+                        WHEN 'Medium'
+                        THEN 3
+
                         ELSE 4
 
                     END,
@@ -744,32 +896,41 @@ def get_project_actions(
 
 
     return {
+        "project_code": (
+            project_code
+        ),
 
-        "project_code":
-            project_code,
+        "reporting_period": (
+            reporting_period
+        ),
 
-        "reporting_period":
-            reporting_period,
+        "action_count": len(
+            actions
+        ),
 
-        "action_count":
-            len(actions),
+        "open_actions": sum(
+            1
+            for action in actions
+            if action[
+                "status"
+            ]
+            !=
+            "Closed"
+        ),
 
-        "open_actions":
-            sum(
-                1
-                for action in actions
-                if action["status"] != "Closed"
-            ),
+        "closed_actions": sum(
+            1
+            for action in actions
+            if action[
+                "status"
+            ]
+            ==
+            "Closed"
+        ),
 
-        "closed_actions":
-            sum(
-                1
-                for action in actions
-                if action["status"] == "Closed"
-            ),
-
-        "actions":
-            actions,
+        "actions": (
+            actions
+        ),
     }
 
 
@@ -784,22 +945,31 @@ def create_project_action(
     initialise_workflow_tables()
 
 
-    if project_code != payload.project_code:
+    if (
+        project_code
+        !=
+        payload.project_code
+    ):
 
         raise HTTPException(
             status_code=422,
-            detail="Project code mismatch",
+            detail=(
+                "Project code mismatch"
+            ),
         )
 
 
-    validate_action(
+    validate_action_fields(
         payload.category,
         payload.status,
         payload.priority,
     )
 
 
-    today = date.today().isoformat()
+    today = (
+        date.today()
+        .isoformat()
+    )
 
 
     owner_role = (
@@ -829,6 +999,7 @@ def create_project_action(
                 source,
                 created_date,
                 updated_date
+
             )
 
             VALUES (
@@ -851,23 +1022,23 @@ def create_project_action(
             ),
         )
 
-
         connection.commit()
 
-
-        action_id = cursor.lastrowid
+        action_id = (
+            cursor.lastrowid
+        )
 
 
     return {
+        "success": True,
 
-        "success":
-            True,
+        "action_id": (
+            action_id
+        ),
 
-        "action_id":
-            action_id,
-
-        "message":
-            "Action created",
+        "message": (
+            "Action created"
+        ),
     }
 
 
@@ -883,18 +1054,8 @@ def update_action(
 
 
     updates = []
+
     parameters = []
-
-
-    if payload.issue is not None:
-
-        updates.append(
-            "issue = ?"
-        )
-
-        parameters.append(
-            payload.issue
-        )
 
 
     if payload.owner_role is not None:
@@ -921,13 +1082,18 @@ def update_action(
 
     if payload.status is not None:
 
-        if payload.status not in VALID_STATUSES:
+        if (
+            payload.status
+            not in
+            VALID_STATUSES
+        ):
 
             raise HTTPException(
                 status_code=422,
-                detail="Invalid action status",
+                detail=(
+                    "Invalid action status"
+                ),
             )
-
 
         updates.append(
             "status = ?"
@@ -940,13 +1106,18 @@ def update_action(
 
     if payload.priority is not None:
 
-        if payload.priority not in VALID_PRIORITIES:
+        if (
+            payload.priority
+            not in
+            VALID_PRIORITIES
+        ):
 
             raise HTTPException(
                 status_code=422,
-                detail="Invalid action priority",
+                detail=(
+                    "Invalid action priority"
+                ),
             )
-
 
         updates.append(
             "priority = ?"
@@ -957,11 +1128,24 @@ def update_action(
         )
 
 
+    if payload.issue is not None:
+
+        updates.append(
+            "issue = ?"
+        )
+
+        parameters.append(
+            payload.issue
+        )
+
+
     if not updates:
 
         raise HTTPException(
             status_code=422,
-            detail="No update fields supplied",
+            detail=(
+                "No update fields supplied"
+            ),
         )
 
 
@@ -990,31 +1174,34 @@ def update_action(
 
             WHERE action_id = ?
             """,
-            tuple(parameters),
+            tuple(
+                parameters
+            ),
         )
-
 
         connection.commit()
 
 
-    if cursor.rowcount == 0:
+        if cursor.rowcount == 0:
 
-        raise HTTPException(
-            status_code=404,
-            detail="Action not found",
-        )
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "Action not found"
+                ),
+            )
 
 
     return {
+        "success": True,
 
-        "success":
-            True,
+        "action_id": (
+            action_id
+        ),
 
-        "action_id":
-            action_id,
-
-        "message":
-            "Action updated",
+        "message": (
+            "Action updated"
+        ),
     }
 
 
@@ -1041,33 +1228,34 @@ def delete_action(
             ),
         )
 
-
         connection.commit()
 
 
-    if cursor.rowcount == 0:
+        if cursor.rowcount == 0:
 
-        raise HTTPException(
-            status_code=404,
-            detail="Action not found",
-        )
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "Action not found"
+                ),
+            )
 
 
     return {
+        "success": True,
 
-        "success":
-            True,
+        "action_id": (
+            action_id
+        ),
 
-        "action_id":
-            action_id,
-
-        "message":
-            "Action deleted",
+        "message": (
+            "Action deleted"
+        ),
     }
 
 
 # ============================================================
-# ACTION SUGGESTIONS
+# AUTO-GENERATED ACTION SUGGESTIONS
 # ============================================================
 
 @router.get(
@@ -1078,151 +1266,289 @@ def get_action_suggestions(
     reporting_period: str,
 ):
 
-    project = get_project_scorecard(
-        project_code
-    )
-
-
-    forecast_variance_pct = float(
-        value_from_project(
-            project,
-            "forecast_variance_pct",
-            0,
+    commentary = (
+        generate_management_commentary(
+            project_code,
+            reporting_period,
         )
     )
 
 
-    progress_variance_pct = float(
-        value_from_project(
-            project,
-            "progress_variance_pct",
-            0,
-        )
-    )
+    with get_connection() as connection:
+
+        project = connection.execute(
+            """
+            SELECT
+                forecast_variance_pct,
+                progress_variance_pct,
+                forecast_credibility_gap_pct
+
+            FROM report_management_scorecard
+
+            WHERE project_code = ?
+            """,
+            (
+                project_code,
+            ),
+        ).fetchone()
 
 
-    credibility_gap_pct = float(
-        value_from_project(
-            project,
-            "forecast_credibility_gap_pct",
-            0,
-        )
-    )
+        schedule = connection.execute(
+            """
+            SELECT
+
+                SUM(
+                    CASE
+                        WHEN is_critical = 1
+                        AND delayed_activity_flag = 1
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS critical_delays
+
+            FROM fact_schedule
+
+            WHERE project_code = ?
+            """,
+            (
+                project_code,
+            ),
+        ).fetchone()
+
+
+        procurement = connection.execute(
+            """
+            SELECT
+
+                SUM(
+                    CASE
+                        WHEN critical_delay_flag = 1
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS critical_delays
+
+            FROM fact_procurement
+
+            WHERE project_code = ?
+            """,
+            (
+                project_code,
+            ),
+        ).fetchone()
 
 
     suggestions = []
 
 
-    if forecast_variance_pct <= -5:
+    forecast_variance = float(
+        project[
+            "forecast_variance_pct"
+        ]
+        or 0
+    )
+
+
+    progress_variance = float(
+        project[
+            "progress_variance_pct"
+        ]
+        or 0
+    )
+
+
+    credibility_gap = float(
+        project[
+            "forecast_credibility_gap_pct"
+        ]
+        or 0
+    )
+
+
+    critical_schedule = int(
+        schedule[
+            "critical_delays"
+        ]
+        or 0
+    )
+
+
+    critical_procurement = int(
+        procurement[
+            "critical_delays"
+        ]
+        or 0
+    )
+
+
+    if forecast_variance <= -5:
 
         suggestions.append(
             {
+                "category": (
+                    "Cost"
+                ),
 
-                "category":
-                    "Cost",
+                "issue": (
+                    "Review forecast overrun "
+                    "and confirm recovery or "
+                    "mitigation plan."
+                ),
 
-                "issue":
-                    (
-                        "Review forecast overrun "
-                        "and confirm recovery or "
-                        "mitigation plan."
-                    ),
+                "owner_role": (
+                    OWNER_ROLE_MAPPING[
+                        "Cost"
+                    ]
+                ),
 
-                "owner_role":
-                    OWNER_ROLE_MAPPING["Cost"],
-
-                "priority":
-                    (
-                        "Critical"
-                        if forecast_variance_pct <= -10
-                        else "High"
-                    ),
+                "priority": (
+                    "Critical"
+                    if forecast_variance
+                    <= -10
+                    else "High"
+                ),
             }
         )
 
 
-    if progress_variance_pct <= -5:
+    if progress_variance <= -5:
 
         suggestions.append(
             {
+                "category": (
+                    "Progress"
+                ),
 
-                "category":
-                    "Progress",
+                "issue": (
+                    "Review progress recovery "
+                    "plan against current "
+                    "programme."
+                ),
 
-                "issue":
-                    (
-                        "Review progress recovery "
-                        "plan against the current "
-                        "programme."
-                    ),
+                "owner_role": (
+                    OWNER_ROLE_MAPPING[
+                        "Progress"
+                    ]
+                ),
 
-                "owner_role":
-                    OWNER_ROLE_MAPPING["Progress"],
-
-                "priority":
-                    (
-                        "Critical"
-                        if progress_variance_pct <= -10
-                        else "High"
-                    ),
+                "priority": (
+                    "Critical"
+                    if progress_variance
+                    <= -10
+                    else "High"
+                ),
             }
         )
 
 
-    if credibility_gap_pct >= 10:
+    if critical_schedule > 0:
 
         suggestions.append(
             {
+                "category": (
+                    "Schedule"
+                ),
 
-                "category":
-                    "Forecast Credibility",
+                "issue": (
+                    "Confirm recovery actions "
+                    "for delayed critical-path "
+                    "activities."
+                ),
 
-                "issue":
-                    (
-                        "Challenge reported FAC "
-                        "against current cost and "
-                        "physical progress."
-                    ),
+                "owner_role": (
+                    OWNER_ROLE_MAPPING[
+                        "Schedule"
+                    ]
+                ),
 
-                "owner_role":
+                "priority": (
+                    "Critical"
+                ),
+            }
+        )
+
+
+    if critical_procurement > 0:
+
+        suggestions.append(
+            {
+                "category": (
+                    "Procurement"
+                ),
+
+                "issue": (
+                    "Escalate critical supplier "
+                    "delivery delay and confirm "
+                    "recovery date."
+                ),
+
+                "owner_role": (
+                    OWNER_ROLE_MAPPING[
+                        "Procurement"
+                    ]
+                ),
+
+                "priority": (
+                    "Critical"
+                ),
+            }
+        )
+
+
+    if credibility_gap >= 10:
+
+        suggestions.append(
+            {
+                "category": (
+                    "Forecast Credibility"
+                ),
+
+                "issue": (
+                    "Challenge reported FAC "
+                    "against current cost and "
+                    "physical progress."
+                ),
+
+                "owner_role": (
                     OWNER_ROLE_MAPPING[
                         "Forecast Credibility"
-                    ],
+                    ]
+                ),
 
-                "priority":
-                    (
-                        "Critical"
-                        if credibility_gap_pct >= 20
-                        else "High"
-                    ),
+                "priority": (
+                    "Critical"
+                    if credibility_gap
+                    >= 20
+                    else "High"
+                ),
             }
         )
 
 
     return {
+        "project_code": (
+            project_code
+        ),
 
-        "project_code":
-            project_code,
+        "reporting_period": (
+            reporting_period
+        ),
 
-        "reporting_period":
-            reporting_period,
+        "suggestion_count": len(
+            suggestions
+        ),
 
-        "suggestion_count":
-            len(suggestions),
+        "suggestions": (
+            suggestions
+        ),
 
-        "suggestions":
-            suggestions,
+        "commentary": (
+            commentary
+        ),
 
-        "generated_by":
-            "Deterministic management rules",
+        "generated_by": (
+            "Deterministic management rules"
+        ),
 
-        "ai_generated":
-            False,
+        "ai_generated": False,
     }
-
-
-# ============================================================
-# INITIALISE
-# ============================================================
-
-initialise_workflow_tables()
