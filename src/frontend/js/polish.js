@@ -411,11 +411,51 @@ async function polishFetchJson(
    REPORTING PERIOD URL
    ============================================================ */
 
+function getEffectiveReportingPeriod() {
+
+    const shared =
+        sessionStorage.getItem(
+            "controlsight:reporting-period"
+        );
+
+    if (shared) {
+
+        controlSightReportingPeriod =
+            shared;
+
+        return shared;
+    }
+
+
+    const select =
+        document.querySelector(
+            "#reporting-period-control select"
+        );
+
+    if (select?.value) {
+
+        controlSightReportingPeriod =
+            select.value;
+
+        sessionStorage.setItem(
+            "controlsight:reporting-period",
+            select.value
+        );
+
+        return select.value;
+    }
+
+
+    return controlSightReportingPeriod;
+}
+
+
 function withReportingPeriod(url) {
 
-    if (
-        !controlSightReportingPeriod
-    ) {
+    const reportingPeriod =
+        getEffectiveReportingPeriod();
+
+    if (!reportingPeriod) {
         return url;
     }
 
@@ -428,7 +468,7 @@ function withReportingPeriod(url) {
         `${url}${separator}` +
         `reporting_period=` +
         encodeURIComponent(
-            controlSightReportingPeriod
+            reportingPeriod
         )
     );
 }
@@ -2355,7 +2395,7 @@ function getPreviousReportingPeriod(
 function updateReportingPeriodContext() {
 
     const selected =
-        controlSightReportingPeriod;
+        getEffectiveReportingPeriod();
 
     if (!selected) {
         return;
@@ -2940,7 +2980,7 @@ async function refreshForecastCredibilityForPeriod() {
 
 
         panel.dataset.loadedPeriod =
-            controlSightReportingPeriod
+            getEffectiveReportingPeriod()
             ||
             "latest";
 
@@ -3988,7 +4028,7 @@ async function refreshCostCockpitForPeriod() {
                         Reporting period:
                         ${polishEscape(
                             formatReportingPeriodLabel(
-                                controlSightReportingPeriod
+                                getEffectiveReportingPeriod()
                                 ||
                                 movement.current_reporting_period
                             )
@@ -6716,3 +6756,159 @@ document.addEventListener(
 
     }
 );
+
+/* ============================================================
+   CONTROLSIGHT AUTHORITATIVE PERIOD HEADER FIX
+   ============================================================ */
+
+(function () {
+    "use strict";
+
+    function selectedMonthEndDate() {
+
+        const period =
+            getEffectiveReportingPeriod();
+
+        if (
+            !period ||
+            !/^\d{4}-\d{2}$/.test(period)
+        ) {
+            return null;
+        }
+
+        const [
+            year,
+            month
+        ] =
+            period
+                .split("-")
+                .map(Number);
+
+        const date =
+            new Date(
+                year,
+                month,
+                0
+            );
+
+        return date;
+    }
+
+
+    function syncSnapshotDate() {
+
+        const element =
+            document.getElementById(
+                "snapshot-date"
+            );
+
+        const date =
+            selectedMonthEndDate();
+
+        if (
+            !element ||
+            !date
+        ) {
+            return;
+        }
+
+        element.textContent =
+            new Intl.DateTimeFormat(
+                "en-GB",
+                {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric"
+                }
+            ).format(date);
+    }
+
+
+    function syncPolishPeriod() {
+
+        const period =
+            getEffectiveReportingPeriod();
+
+        if (!period) {
+            return;
+        }
+
+        controlSightReportingPeriod =
+            period;
+
+
+        const select =
+            document.querySelector(
+                "#reporting-period-control select"
+            );
+
+        if (
+            select &&
+            select.value !== period
+        ) {
+            select.value =
+                period;
+        }
+
+
+        syncSnapshotDate();
+    }
+
+
+    window.addEventListener(
+        "hashchange",
+        () => {
+
+            [
+                0,
+                100,
+                300
+            ].forEach(
+                delay =>
+                    setTimeout(
+                        syncPolishPeriod,
+                        delay
+                    )
+            );
+
+        }
+    );
+
+
+    document.addEventListener(
+        "change",
+        event => {
+
+            if (
+                event.target?.id ===
+                    "po-reporting-period"
+                ||
+                event.target?.matches?.(
+                    "#reporting-period-control select"
+                )
+            ) {
+
+                setTimeout(
+                    syncPolishPeriod,
+                    0
+                );
+            }
+
+        },
+        true
+    );
+
+
+    [
+        0,
+        250,
+        700
+    ].forEach(
+        delay =>
+            setTimeout(
+                syncPolishPeriod,
+                delay
+            )
+    );
+
+})();
