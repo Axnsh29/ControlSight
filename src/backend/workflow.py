@@ -4,6 +4,8 @@ import sqlite3
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from src.backend.runtime_paths import get_runtime_database_path
+
 
 # ============================================================
 # ROUTER
@@ -19,9 +21,7 @@ router = APIRouter(
 # DATABASE
 # ============================================================
 
-DATABASE_PATH = (
-    "data/database/controlsight.db"
-)
+DATABASE_PATH = get_runtime_database_path()
 
 
 def get_connection():

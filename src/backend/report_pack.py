@@ -285,6 +285,15 @@ def percentage(
     )
 
 
+def percentage_points(
+    value,
+):
+
+    return (
+        f"{safe_float(value):,.2f} pp"
+    )
+
+
 def text_value(
     value,
 ):

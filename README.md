@@ -32,6 +32,22 @@ The application demonstrates how project-controls information can be combined in
 
 ---
 
+## Application Preview
+
+### Portfolio Overview
+
+![ControlSight Portfolio Overview](docs/screenshots/portfolio-overview.png)
+
+### Project Detail
+
+![ControlSight Project Detail](docs/screenshots/project-detail.png)
+
+### Data Quality
+
+![ControlSight Data Quality](docs/screenshots/data-quality.png)
+
+---
+
 ## What ControlSight Does
 
 ControlSight provides portfolio and project-level visibility across:

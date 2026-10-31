@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import csv
 import io
 import json
+import os
 import re
 import sqlite3
 import uuid
@@ -32,11 +33,16 @@ PROJECT_ROOT = (
     .parents[2]
 )
 
-UPLOAD_ROOT = (
-    PROJECT_ROOT
-    / "data"
-    / "uploads"
-)
+if os.getenv("VERCEL"):
+    UPLOAD_ROOT = Path(
+        "/tmp/controlsight_uploads"
+    )
+else:
+    UPLOAD_ROOT = (
+        PROJECT_ROOT
+        / "data"
+        / "uploads"
+    )
 
 UPLOAD_DATABASE_PATH = (
     UPLOAD_ROOT

@@ -165,13 +165,47 @@ async function uploadFetchJson(
                 detail = body.detail;
 
             } else if (
+                Array.isArray(body?.detail)
+            ) {
+
+                detail = body.detail
+                    .map(item => {
+
+                        const location =
+                            Array.isArray(item?.loc)
+                                ? item.loc
+                                    .filter(part =>
+                                        part !== "body"
+                                    )
+                                    .join(" → ")
+                                : "";
+
+                        const message =
+                            item?.msg ||
+                            "Validation error";
+
+                        return location
+                            ? `${location}: ${message}`
+                            : message;
+                    })
+                    .join("\n");
+
+            } else if (
+                body?.detail &&
+                typeof body.detail === "object"
+            ) {
+
+                detail =
+                    body.detail.message ||
+                    body.detail.error ||
+                    "The uploaded file could not be validated.";
+
+            } else if (
                 body?.detail
             ) {
 
                 detail =
-                    JSON.stringify(
-                        body.detail
-                    );
+                    String(body.detail);
             }
 
         } catch {
