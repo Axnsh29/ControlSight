@@ -5155,3 +5155,140 @@ if (document.readyState === "loading") {
 
     installDynamicViewRouterSync();
 }
+
+/* ============================================================
+   PROJECTS TABLE — AUTHORITATIVE PERIOD REFRESH
+   Keep portfolio rows aligned with the shared reporting month.
+   ============================================================ */
+
+(function () {
+    "use strict";
+
+    let projectsPeriodRefreshRunning =
+        false;
+
+
+    async function refreshProjectsForSharedPeriod() {
+
+        if (projectsPeriodRefreshRunning) {
+            return;
+        }
+
+        const portfolio =
+            document.getElementById(
+                "project-portfolio"
+            );
+
+        if (!portfolio) {
+            return;
+        }
+
+
+        projectsPeriodRefreshRunning =
+            true;
+
+        try {
+
+            await loadProjects();
+
+        } catch (error) {
+
+            console.error(
+                "Unable to refresh Projects for reporting period:",
+                error
+            );
+
+        } finally {
+
+            projectsPeriodRefreshRunning =
+                false;
+        }
+    }
+
+
+    /*
+     * Premium Overview month changed.
+     */
+    document.addEventListener(
+        "change",
+        event => {
+
+            if (
+                event.target?.id ===
+                    "po-reporting-period"
+                ||
+                event.target?.matches?.(
+                    "#reporting-period-control select"
+                )
+            ) {
+
+                setTimeout(
+                    refreshProjectsForSharedPeriod,
+                    0
+                );
+            }
+
+        },
+        true
+    );
+
+
+    /*
+     * Polish layer announces a reporting-period change.
+     */
+    window.addEventListener(
+        "controlsight:reporting-period-changed",
+        () => {
+
+            setTimeout(
+                refreshProjectsForSharedPeriod,
+                0
+            );
+        }
+    );
+
+
+    /*
+     * Always refresh when entering Projects.
+     */
+    window.addEventListener(
+        "hashchange",
+        () => {
+
+            if (
+                window.location.hash ===
+                "#project-portfolio"
+            ) {
+
+                setTimeout(
+                    refreshProjectsForSharedPeriod,
+                    0
+                );
+            }
+        }
+    );
+
+
+    document.addEventListener(
+        "click",
+        event => {
+
+            const projectsLink =
+                event.target.closest(
+                    '.sidebar-nav .nav-item[href="#project-portfolio"]'
+                );
+
+            if (!projectsLink) {
+                return;
+            }
+
+            setTimeout(
+                refreshProjectsForSharedPeriod,
+                50
+            );
+
+        },
+        true
+    );
+
+})();
