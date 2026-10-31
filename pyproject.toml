@@ -9,6 +9,7 @@ dependencies = [
     "pandas",
     "numpy",
     "reportlab",
+    "openpyxl",
 ]
 
 [tool.vercel]

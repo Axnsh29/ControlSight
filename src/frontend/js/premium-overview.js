@@ -3819,3 +3819,134 @@
         );
 
 })();
+
+
+/* ============================================================
+   CONTROLSIGHT PERIOD REASSERTION FIX
+   Keep premium + legacy month aligned after navigation/render.
+   ============================================================ */
+
+(function () {
+    "use strict";
+
+    const KEY =
+        "controlsight:reporting-period";
+
+
+    function syncLegacyPeriod() {
+
+        const period =
+            sessionStorage.getItem(
+                KEY
+            );
+
+        if (!period) {
+            return;
+        }
+
+
+        const select =
+            document.querySelector(
+                "#reporting-period-control select"
+            );
+
+        if (!select) {
+            return;
+        }
+
+
+        const available =
+            Array.from(
+                select.options || []
+            ).some(
+                option =>
+                    option.value === period
+            );
+
+
+        if (
+            !available ||
+            select.value === period
+        ) {
+            return;
+        }
+
+
+        select.value =
+            period;
+
+
+        select.dispatchEvent(
+            new Event(
+                "change",
+                {
+                    bubbles: true
+                }
+            )
+        );
+    }
+
+
+    function reassertPeriod() {
+
+        /*
+         * Legacy controls can be populated asynchronously,
+         * so re-check a few times after route changes.
+         */
+        [
+            0,
+            100,
+            300,
+            700
+        ].forEach(delay => {
+
+            setTimeout(
+                syncLegacyPeriod,
+                delay
+            );
+
+        });
+    }
+
+
+    window.addEventListener(
+        "hashchange",
+        reassertPeriod
+    );
+
+
+    document.addEventListener(
+        "click",
+        event => {
+
+            if (
+                event.target.closest(
+                    ".sidebar-nav .nav-item"
+                )
+                ||
+                event.target.closest(
+                    "#po-attention-panel tbody tr"
+                )
+                ||
+                event.target.closest(
+                    ".po-search-result"
+                )
+            ) {
+
+                reassertPeriod();
+            }
+
+        },
+        true
+    );
+
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        reassertPeriod
+    );
+
+
+    reassertPeriod();
+
+})();
