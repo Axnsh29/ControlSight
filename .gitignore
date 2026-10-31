@@ -19,3 +19,7 @@ Thumbs.db
 # ControlSight runtime generated files
 data/uploads/
 data/report_packs/
+
+# Include ControlSight demo analytical database
+!data/database/
+!data/database/controlsight.db
