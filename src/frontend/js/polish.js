@@ -2574,12 +2574,40 @@ async function loadReportingPeriodSelector() {
             periods;
 
 
+        const sharedReportingPeriod =
+            sessionStorage.getItem(
+                "controlsight:reporting-period"
+            );
+
+        const availablePeriods =
+            new Set(
+                periods.map(
+                    item =>
+                        item.year_month
+                )
+            );
+
         controlSightReportingPeriod =
-            data
-                .default_reporting_period
-                ?.year_month
-            ||
-            periods[0].year_month;
+            (
+                sharedReportingPeriod
+                &&
+                availablePeriods.has(
+                    sharedReportingPeriod
+                )
+            )
+                ? sharedReportingPeriod
+                : (
+                    data
+                        .default_reporting_period
+                        ?.year_month
+                    ||
+                    periods[0].year_month
+                );
+
+        sessionStorage.setItem(
+            "controlsight:reporting-period",
+            controlSightReportingPeriod
+        );
 
 
         const select =
@@ -2623,6 +2651,11 @@ async function loadReportingPeriodSelector() {
 
                 controlSightReportingPeriod =
                     event.target.value;
+
+                sessionStorage.setItem(
+                    "controlsight:reporting-period",
+                    controlSightReportingPeriod
+                );
 
                 updateReportingPeriodContext();
             }
@@ -6269,16 +6302,66 @@ async function loadReportingSnapshot() {
             await response.json();
 
 
-        const latest =
+        const selectedPeriod =
+            controlSightReportingPeriod
+            ||
+            sessionStorage.getItem(
+                "controlsight:reporting-period"
+            )
+            ||
+            data
+                .default_reporting_period
+                ?.year_month;
+
+
+        let snapshotDate =
             data
                 .default_reporting_period
                 ?.date;
 
 
+        if (
+            selectedPeriod
+            &&
+            /^\d{4}-\d{2}$/.test(
+                selectedPeriod
+            )
+        ) {
+
+            const [
+                year,
+                month
+            ] =
+                selectedPeriod
+                    .split("-")
+                    .map(Number);
+
+
+            const lastDay =
+                new Date(
+                    year,
+                    month,
+                    0
+                );
+
+
+            snapshotDate =
+                [
+                    lastDay.getFullYear(),
+                    String(
+                        lastDay.getMonth() + 1
+                    ).padStart(2, "0"),
+                    String(
+                        lastDay.getDate()
+                    ).padStart(2, "0")
+                ].join("-");
+        }
+
+
         element.textContent =
-            latest
+            snapshotDate
                 ? formatSnapshotDate(
-                    latest
+                    snapshotDate
                 )
                 : "Portfolio snapshot";
 
