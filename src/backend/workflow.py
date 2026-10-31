@@ -1,8 +1,16 @@
 from datetime import date
+import os
 import sqlite3
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
+try:
+    import psycopg
+    from psycopg.rows import dict_row
+except ImportError:
+    psycopg = None
+    dict_row = None
 
 from src.backend.runtime_paths import get_runtime_database_path
 
@@ -33,6 +41,355 @@ def get_connection():
     connection.row_factory = sqlite3.Row
 
     return connection
+
+
+# ============================================================
+# DURABLE WORKFLOW DATABASE
+# ============================================================
+
+WORKFLOW_DATABASE_URL = (
+    os.getenv("WORKFLOW_DATABASE_URL")
+    or
+    os.getenv("DATABASE_URL")
+    or
+    os.getenv("POSTGRES_URL")
+)
+
+
+def durable_workflow_enabled():
+
+    return bool(
+        WORKFLOW_DATABASE_URL
+    )
+
+
+def get_durable_workflow_connection():
+
+    if not WORKFLOW_DATABASE_URL:
+
+        raise RuntimeError(
+            "No durable workflow database configured."
+        )
+
+    if psycopg is None:
+
+        raise RuntimeError(
+            "psycopg is required for durable workflow storage."
+        )
+
+    return psycopg.connect(
+        WORKFLOW_DATABASE_URL,
+        row_factory=dict_row,
+    )
+
+
+def initialise_durable_action_table():
+
+    if not durable_workflow_enabled():
+        return
+
+    with get_durable_workflow_connection() as connection:
+
+        with connection.cursor() as cursor:
+
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS workflow_actions (
+                    action_id BIGSERIAL PRIMARY KEY,
+                    project_code TEXT NOT NULL,
+                    reporting_period TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    issue TEXT NOT NULL,
+                    owner_role TEXT NOT NULL,
+                    due_date TEXT,
+                    status TEXT NOT NULL DEFAULT 'Open',
+                    priority TEXT NOT NULL DEFAULT 'Medium',
+                    source TEXT NOT NULL DEFAULT 'Management Review',
+                    created_date TEXT NOT NULL,
+                    updated_date TEXT NOT NULL
+                )
+                """
+            )
+
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS
+                idx_workflow_actions_project_period
+                ON workflow_actions (
+                    project_code,
+                    reporting_period
+                )
+                """
+            )
+
+        connection.commit()
+
+
+def get_durable_actions(
+    project_code,
+    reporting_period=None,
+):
+
+    initialise_durable_action_table()
+
+    with get_durable_workflow_connection() as connection:
+
+        with connection.cursor() as cursor:
+
+            if reporting_period:
+
+                cursor.execute(
+                    """
+                    SELECT *
+
+                    FROM workflow_actions
+
+                    WHERE
+                        project_code = %s
+                        AND reporting_period = %s
+
+                    ORDER BY
+
+                        CASE priority
+                            WHEN 'Critical' THEN 1
+                            WHEN 'High' THEN 2
+                            WHEN 'Medium' THEN 3
+                            ELSE 4
+                        END,
+
+                        due_date
+                    """,
+                    (
+                        project_code,
+                        reporting_period,
+                    ),
+                )
+
+            else:
+
+                cursor.execute(
+                    """
+                    SELECT *
+
+                    FROM workflow_actions
+
+                    WHERE project_code = %s
+
+                    ORDER BY
+
+                        CASE priority
+                            WHEN 'Critical' THEN 1
+                            WHEN 'High' THEN 2
+                            WHEN 'Medium' THEN 3
+                            ELSE 4
+                        END,
+
+                        due_date
+                    """,
+                    (
+                        project_code,
+                    ),
+                )
+
+            return cursor.fetchall()
+
+
+def create_durable_action(
+    payload,
+    owner_role,
+    today,
+):
+
+    initialise_durable_action_table()
+
+    with get_durable_workflow_connection() as connection:
+
+        with connection.cursor() as cursor:
+
+            cursor.execute(
+                """
+                INSERT INTO workflow_actions (
+                    project_code,
+                    reporting_period,
+                    category,
+                    issue,
+                    owner_role,
+                    due_date,
+                    status,
+                    priority,
+                    source,
+                    created_date,
+                    updated_date
+                )
+
+                VALUES (
+                    %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s
+                )
+
+                RETURNING action_id
+                """,
+                (
+                    payload.project_code,
+                    payload.reporting_period,
+                    payload.category,
+                    payload.issue,
+                    owner_role,
+                    payload.due_date,
+                    payload.status,
+                    payload.priority,
+                    payload.source,
+                    today,
+                    today,
+                ),
+            )
+
+            row = cursor.fetchone()
+
+        connection.commit()
+
+    return row["action_id"]
+
+
+def update_durable_action(
+    action_id,
+    payload,
+):
+
+    initialise_durable_action_table()
+
+    updates = []
+    parameters = []
+
+    if payload.owner_role is not None:
+        updates.append(
+            "owner_role = %s"
+        )
+        parameters.append(
+            payload.owner_role
+        )
+
+    if payload.due_date is not None:
+        updates.append(
+            "due_date = %s"
+        )
+        parameters.append(
+            payload.due_date
+        )
+
+    if payload.status is not None:
+
+        if payload.status not in VALID_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail="Invalid action status",
+            )
+
+        updates.append(
+            "status = %s"
+        )
+        parameters.append(
+            payload.status
+        )
+
+    if payload.priority is not None:
+
+        if payload.priority not in VALID_PRIORITIES:
+            raise HTTPException(
+                status_code=422,
+                detail="Invalid action priority",
+            )
+
+        updates.append(
+            "priority = %s"
+        )
+        parameters.append(
+            payload.priority
+        )
+
+    if payload.issue is not None:
+        updates.append(
+            "issue = %s"
+        )
+        parameters.append(
+            payload.issue
+        )
+
+    if not updates:
+        raise HTTPException(
+            status_code=422,
+            detail="No update fields supplied",
+        )
+
+    updates.append(
+        "updated_date = %s"
+    )
+    parameters.append(
+        date.today().isoformat()
+    )
+
+    parameters.append(
+        action_id
+    )
+
+    with get_durable_workflow_connection() as connection:
+
+        with connection.cursor() as cursor:
+
+            cursor.execute(
+                f"""
+                UPDATE workflow_actions
+
+                SET {", ".join(updates)}
+
+                WHERE action_id = %s
+                """,
+                tuple(parameters),
+            )
+
+            updated = cursor.rowcount
+
+        connection.commit()
+
+    if updated == 0:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Action not found",
+        )
+
+
+def delete_durable_action(
+    action_id,
+):
+
+    initialise_durable_action_table()
+
+    with get_durable_workflow_connection() as connection:
+
+        with connection.cursor() as cursor:
+
+            cursor.execute(
+                """
+                DELETE FROM workflow_actions
+
+                WHERE action_id = %s
+                """,
+                (
+                    action_id,
+                ),
+            )
+
+            deleted = cursor.rowcount
+
+        connection.commit()
+
+    if deleted == 0:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Action not found",
+        )
 
 
 # ============================================================
@@ -813,124 +1170,105 @@ def get_project_actions(
     reporting_period: str | None = None,
 ):
 
-    initialise_workflow_tables()
+    if durable_workflow_enabled():
 
-    with get_connection() as connection:
+        actions = get_durable_actions(
+            project_code,
+            reporting_period,
+        )
 
-        if reporting_period:
+    else:
 
-            rows = connection.execute(
-                """
-                SELECT *
+        initialise_workflow_tables()
 
-                FROM workflow_actions
+        with get_connection() as connection:
 
-                WHERE
-                    project_code = ?
-                    AND reporting_period = ?
+            if reporting_period:
 
-                ORDER BY
+                rows = connection.execute(
+                    """
+                    SELECT *
 
-                    CASE priority
+                    FROM workflow_actions
 
-                        WHEN 'Critical'
-                        THEN 1
+                    WHERE
+                        project_code = ?
+                        AND reporting_period = ?
 
-                        WHEN 'High'
-                        THEN 2
+                    ORDER BY
 
-                        WHEN 'Medium'
-                        THEN 3
+                        CASE priority
+                            WHEN 'Critical' THEN 1
+                            WHEN 'High' THEN 2
+                            WHEN 'Medium' THEN 3
+                            ELSE 4
+                        END,
 
-                        ELSE 4
+                        due_date
+                    """,
+                    (
+                        project_code,
+                        reporting_period,
+                    ),
+                ).fetchall()
 
-                    END,
+            else:
 
-                    due_date
-                """,
-                (
-                    project_code,
-                    reporting_period,
-                ),
-            ).fetchall()
+                rows = connection.execute(
+                    """
+                    SELECT *
 
-        else:
+                    FROM workflow_actions
 
-            rows = connection.execute(
-                """
-                SELECT *
+                    WHERE project_code = ?
 
-                FROM workflow_actions
+                    ORDER BY
 
-                WHERE project_code = ?
+                        CASE priority
+                            WHEN 'Critical' THEN 1
+                            WHEN 'High' THEN 2
+                            WHEN 'Medium' THEN 3
+                            ELSE 4
+                        END,
 
-                ORDER BY
+                        due_date
+                    """,
+                    (
+                        project_code,
+                    ),
+                ).fetchall()
 
-                    CASE priority
-
-                        WHEN 'Critical'
-                        THEN 1
-
-                        WHEN 'High'
-                        THEN 2
-
-                        WHEN 'Medium'
-                        THEN 3
-
-                        ELSE 4
-
-                    END,
-
-                    due_date
-                """,
-                (
-                    project_code,
-                ),
-            ).fetchall()
-
-
-    actions = [
-        dict(row)
-        for row in rows
-    ]
-
+        actions = [
+            dict(row)
+            for row in rows
+        ]
 
     return {
-        "project_code": (
-            project_code
-        ),
+        "project_code":
+            project_code,
 
-        "reporting_period": (
-            reporting_period
-        ),
+        "reporting_period":
+            reporting_period,
 
-        "action_count": len(
-            actions
-        ),
+        "action_count":
+            len(actions),
 
-        "open_actions": sum(
-            1
-            for action in actions
-            if action[
-                "status"
-            ]
-            !=
-            "Closed"
-        ),
+        "open_actions":
+            sum(
+                1
+                for action in actions
+                if action["status"] != "Closed"
+            ),
 
-        "closed_actions": sum(
-            1
-            for action in actions
-            if action[
-                "status"
-            ]
-            ==
-            "Closed"
-        ),
+        "closed_actions":
+            sum(
+                1
+                for action in actions
+                if action["status"] == "Closed"
+            ),
 
-        "actions": (
-            actions
-        ),
+        "actions":
+            actions,
     }
 
 
@@ -942,22 +1280,12 @@ def create_project_action(
     payload: ActionCreate,
 ):
 
-    initialise_workflow_tables()
-
-
-    if (
-        project_code
-        !=
-        payload.project_code
-    ):
+    if project_code != payload.project_code:
 
         raise HTTPException(
             status_code=422,
-            detail=(
-                "Project code mismatch"
-            ),
+            detail="Project code mismatch",
         )
-
 
     validate_action_fields(
         payload.category,
@@ -965,12 +1293,10 @@ def create_project_action(
         payload.priority,
     )
 
-
     today = (
         date.today()
         .isoformat()
     )
-
 
     owner_role = (
         payload.owner_role
@@ -981,64 +1307,66 @@ def create_project_action(
         )
     )
 
+    if durable_workflow_enabled():
 
-    with get_connection() as connection:
-
-        cursor = connection.execute(
-            """
-            INSERT INTO workflow_actions (
-
-                project_code,
-                reporting_period,
-                category,
-                issue,
-                owner_role,
-                due_date,
-                status,
-                priority,
-                source,
-                created_date,
-                updated_date
-
-            )
-
-            VALUES (
-                ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?
-            )
-            """,
-            (
-                payload.project_code,
-                payload.reporting_period,
-                payload.category,
-                payload.issue,
-                owner_role,
-                payload.due_date,
-                payload.status,
-                payload.priority,
-                payload.source,
-                today,
-                today,
-            ),
+        action_id = create_durable_action(
+            payload,
+            owner_role,
+            today,
         )
 
-        connection.commit()
+    else:
 
-        action_id = (
-            cursor.lastrowid
-        )
+        initialise_workflow_tables()
 
+        with get_connection() as connection:
+
+            cursor = connection.execute(
+                """
+                INSERT INTO workflow_actions (
+                    project_code,
+                    reporting_period,
+                    category,
+                    issue,
+                    owner_role,
+                    due_date,
+                    status,
+                    priority,
+                    source,
+                    created_date,
+                    updated_date
+                )
+
+                VALUES (
+                    ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?
+                )
+                """,
+                (
+                    payload.project_code,
+                    payload.reporting_period,
+                    payload.category,
+                    payload.issue,
+                    owner_role,
+                    payload.due_date,
+                    payload.status,
+                    payload.priority,
+                    payload.source,
+                    today,
+                    today,
+                ),
+            )
+
+            connection.commit()
+
+            action_id = (
+                cursor.lastrowid
+            )
 
     return {
         "success": True,
-
-        "action_id": (
-            action_id
-        ),
-
-        "message": (
-            "Action created"
-        ),
+        "action_id": action_id,
+        "message": "Action created",
     }
 
 
@@ -1050,13 +1378,23 @@ def update_action(
     payload: ActionUpdate,
 ):
 
+    if durable_workflow_enabled():
+
+        update_durable_action(
+            action_id,
+            payload,
+        )
+
+        return {
+            "success": True,
+            "action_id": action_id,
+            "message": "Action updated",
+        }
+
     initialise_workflow_tables()
 
-
     updates = []
-
     parameters = []
-
 
     if payload.owner_role is not None:
 
@@ -1068,7 +1406,6 @@ def update_action(
             payload.owner_role
         )
 
-
     if payload.due_date is not None:
 
         updates.append(
@@ -1079,20 +1416,13 @@ def update_action(
             payload.due_date
         )
 
-
     if payload.status is not None:
 
-        if (
-            payload.status
-            not in
-            VALID_STATUSES
-        ):
+        if payload.status not in VALID_STATUSES:
 
             raise HTTPException(
                 status_code=422,
-                detail=(
-                    "Invalid action status"
-                ),
+                detail="Invalid action status",
             )
 
         updates.append(
@@ -1103,20 +1433,13 @@ def update_action(
             payload.status
         )
 
-
     if payload.priority is not None:
 
-        if (
-            payload.priority
-            not in
-            VALID_PRIORITIES
-        ):
+        if payload.priority not in VALID_PRIORITIES:
 
             raise HTTPException(
                 status_code=422,
-                detail=(
-                    "Invalid action priority"
-                ),
+                detail="Invalid action priority",
             )
 
         updates.append(
@@ -1126,7 +1449,6 @@ def update_action(
         parameters.append(
             payload.priority
         )
-
 
     if payload.issue is not None:
 
@@ -1138,16 +1460,12 @@ def update_action(
             payload.issue
         )
 
-
     if not updates:
 
         raise HTTPException(
             status_code=422,
-            detail=(
-                "No update fields supplied"
-            ),
+            detail="No update fields supplied",
         )
-
 
     updates.append(
         "updated_date = ?"
@@ -1157,11 +1475,9 @@ def update_action(
         date.today().isoformat()
     )
 
-
     parameters.append(
         action_id
     )
-
 
     with get_connection() as connection:
 
@@ -1169,39 +1485,26 @@ def update_action(
             f"""
             UPDATE workflow_actions
 
-            SET
-                {", ".join(updates)}
+            SET {", ".join(updates)}
 
             WHERE action_id = ?
             """,
-            tuple(
-                parameters
-            ),
+            tuple(parameters),
         )
 
         connection.commit()
-
 
         if cursor.rowcount == 0:
 
             raise HTTPException(
                 status_code=404,
-                detail=(
-                    "Action not found"
-                ),
+                detail="Action not found",
             )
-
 
     return {
         "success": True,
-
-        "action_id": (
-            action_id
-        ),
-
-        "message": (
-            "Action updated"
-        ),
+        "action_id": action_id,
+        "message": "Action updated",
     }
 
 
@@ -1212,8 +1515,19 @@ def delete_action(
     action_id: int,
 ):
 
-    initialise_workflow_tables()
+    if durable_workflow_enabled():
 
+        delete_durable_action(
+            action_id
+        )
+
+        return {
+            "success": True,
+            "action_id": action_id,
+            "message": "Action deleted",
+        }
+
+    initialise_workflow_tables()
 
     with get_connection() as connection:
 
@@ -1230,27 +1544,17 @@ def delete_action(
 
         connection.commit()
 
-
         if cursor.rowcount == 0:
 
             raise HTTPException(
                 status_code=404,
-                detail=(
-                    "Action not found"
-                ),
+                detail="Action not found",
             )
-
 
     return {
         "success": True,
-
-        "action_id": (
-            action_id
-        ),
-
-        "message": (
-            "Action deleted"
-        ),
+        "action_id": action_id,
+        "message": "Action deleted",
     }
 
 
